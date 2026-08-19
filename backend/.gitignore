@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+venv/
+
+# why .env line is important
+# It prevents your MongoDB URL and JWT secret from being accidentally committed to GitHub.
+# The other lines keep Python cache files and your virtual environment out of the repository.
