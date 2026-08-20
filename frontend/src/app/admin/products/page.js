@@ -69,7 +69,7 @@ export default function AdminProducts() {
       };
     }
 
-    if (stock <= 10) {
+    if (stock <= 15) {
       return {
         label: "Low Stock",
         className: "bg-orange-50 text-orange-700 border-orange-200",
@@ -1205,7 +1205,7 @@ export default function AdminProducts() {
                         ${
                           product.stock === 0
                             ? "bg-red-50 text-red-700 border-red-200"
-                            : product.stock <= 10
+                            : product.stock <= 15
                               ? "bg-orange-50 text-orange-700 border-orange-200"
                               : "bg-green-50 text-green-700 border-green-200"
                         }
@@ -1408,7 +1408,7 @@ export default function AdminProducts() {
                       ${
                         product.stock === 0
                           ? "text-red-600"
-                          : product.stock <= 10
+                          : product.stock <= 15
                             ? "text-orange-500"
                             : "text-green-600"
                       }
@@ -1417,8 +1417,6 @@ export default function AdminProducts() {
                     {product.stock}
                   </p>
                 </div>
-
-                {/* Status */}
 
                 {/* Status */}
 
