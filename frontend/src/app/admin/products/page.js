@@ -44,6 +44,10 @@ export default function AdminProducts() {
   // Product variants
   const [variantFields, setVariantFields] = useState([]);
 
+  // Message State
+  const [message , setMessage] = useState("");
+  const [messageType , setMessageType] = useState("");
+
   // Format Product Date
   function formatProductDate(date) {
     if (!date) {
@@ -267,6 +271,20 @@ export default function AdminProducts() {
     return variantPrices;
   }
 
+  //============================================================
+  // Message display after inserting/updating product
+  //============================================================
+
+  function showMessage(message, type = "success") {
+    setMessage(message);
+    setMessageType(type);
+
+    setTimeout( ()=> {
+      setMessage("");
+      setMessageType("");
+    }, 3000);
+  }
+
   // ============================================================
   // Add Product
   // ============================================================
@@ -287,17 +305,16 @@ export default function AdminProducts() {
         variantPrices: variantPrices,
       };
 
-      console.log("Adding Product:", newProduct);
-
       const data = await addProduct(newProduct);
 
-      console.log("Product Added:", data);
-
       const updatedProducts = await getProducts();
-
       setProducts(updatedProducts);
 
+      // close form
       resetForm();
+
+      // Show Message
+      showMessage("Product Added Successfully");
     } catch (error) {
       console.error("Failed to add product:", error);
     }
@@ -322,16 +339,18 @@ export default function AdminProducts() {
         variants: variants,
         variantPrices: variantPrices,
       };
-
-      console.log("Updating Product:", updatedProduct);
-
+      
       await updateProduct(editProduct.productUuid, updatedProduct);
 
       const updatedProducts = await getProducts();
-
       setProducts(updatedProducts);
 
+      // close modal
       resetForm();
+
+      // Show Message
+      showMessage("Product Updated Successfully!");
+
     } catch (error) {
       console.error("Failed to update product:", error);
     }
@@ -354,8 +373,9 @@ export default function AdminProducts() {
       await deleteProduct(productUuid);
 
       const updatedProducts = await getProducts();
-
       setProducts(updatedProducts);
+
+      showMessage("Product Deleted Successfully!")
     } catch (error) {
       console.error("Delete Product error:", error);
     }
@@ -485,19 +505,21 @@ export default function AdminProducts() {
   // ============================================================
 
   return (
-    <div
-      className="
-        min-h-screen
-        bg-gray-100
-        px-3
-        pt-8
-        pb-6
-        sm:px-6
-        sm:pt-10
-        sm:pb-8
-        lg:px-8
-      "
-    >
+    <div className="min-h-screen bg-gray-100 px-3 pt-8 pb-6 sm:px-6">
+
+      {/* Message */}
+      {message && (
+        <div
+          className={`fixed top-5 right-5 z100 px-5 py-3 rounded-xl shadow-lg text-white font-medium ${
+            messageType === "error"
+            ? "bg-red-600"
+            : "bg-green-600"
+          }`}
+        >
+          {message}
+        </div>
+      )}
+    
       {/* ====================================================== */}
       {/* Header */}
       {/* ====================================================== */}
@@ -584,17 +606,9 @@ export default function AdminProducts() {
       {/* ====================================================== */}
 
       {showForm && (
-        <div
-          className="
-            bg-white
-            rounded-xl
-            shadow-md
-            p-4
-            sm:p-6
-            mb-6
-            sm:mb-8
-          "
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+
+          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white rounded-xl shadow-xl p-5 relative">
           <h2
             className="
               text-xl
@@ -1110,7 +1124,9 @@ export default function AdminProducts() {
             </button>
           </div>
         </div>
-      )}
+        </div>
+        )}
+      
 
       {/* ====================================================== */}
       {/* Desktop Product Table */}
@@ -1535,5 +1551,5 @@ export default function AdminProducts() {
         )}
       </div>
     </div>
-  );
-}
+    )
+  }

@@ -11,6 +11,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [ users , setUsers ] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
 
@@ -45,6 +46,21 @@ export default function AdminPage() {
           throw new Error(adminData.detail || "Admin access denied");
         }
 
+        // Get Users
+        
+        const usersResponse = await fetch (`${API_URL}/admin/users` , {
+          headers : {
+            Authorization : `Bearer ${token}`,
+          },
+        }
+        );
+
+        if ( !usersResponse.ok ) {
+          throw new Error("Failed to fetch users");
+        }
+
+        const usersData = await usersResponse.json();
+
         // ----------------------------------------------------------
         // 2. Get Products
         // ----------------------------------------------------------
@@ -77,6 +93,7 @@ export default function AdminPage() {
         // Store Data
         // ----------------------------------------------------------
 
+        setUsers(usersData);
         setProducts(productsData);
         setOrders(ordersData);
 
@@ -100,6 +117,8 @@ export default function AdminPage() {
   // ----------------------------------------------------------------
   // Dashboard Calculations
   // ----------------------------------------------------------------
+
+  const totalUsers = users.length;
 
   const totalProducts = products.length;
 
@@ -219,6 +238,31 @@ export default function AdminPage() {
           lg:gap-6
         "
       >
+
+        {/* -------------------------------------------------------- */}
+        {/* Total Users */}
+        {/* -------------------------------------------------------- */}
+        {/* <div className=" bg-white
+              rounded-xl
+              shadow-md
+              p-4
+              sm:p-5
+              lg:p-6
+              border-l-4
+              border-yellow-500
+              min-w-0">
+
+              <p className="text-sm font-medium text-gray-500">Total Users</p>
+          
+            <p className="text-3xl sm:text-4xl font-bold text-gray-800 mt-2">
+              {totalUsers}
+            </p>
+          
+            <p className="text-xs sm:text-sm text-gray-500 mt-2">
+              Users in OneCart
+            </p>
+        </div> */}
+
         {/* -------------------------------------------------------- */}
         {/* Total Products */}
         {/* -------------------------------------------------------- */}

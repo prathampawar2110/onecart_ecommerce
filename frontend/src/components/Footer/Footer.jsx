@@ -9,7 +9,7 @@ export default function Footer() {
       {/* Main Footer */} 
       {/* ========================================================== */}
 
-      <div
+      {/* <div
         className="
           max-w-7xl
           mx-auto
@@ -27,24 +27,24 @@ export default function Footer() {
           gap-8
           sm:gap-10
         "
-      >
+      > */}
         {/* ======================================================== */}
         {/* Company */}
         {/* ======================================================== */}
 
-        <div>
+        {/* <div>
           <h2 className="text-xl sm:text-2xl font-bold mb-4">OneCart</h2>
 
           <p className="text-gray-400 text-sm sm:text-base leading-relaxed">
             Your one stop destination for all your shopping needs.
           </p>
-        </div>
+        </div> */}
 
         {/* ======================================================== */}
         {/* Customer Service */}
         {/* ======================================================== */}
 
-        <div>
+        {/* <div>
           <h3 className="font-semibold text-lg mb-4">Customer Service</h3>
 
           <ul className="space-y-3 text-gray-400 text-sm sm:text-base">
@@ -66,13 +66,13 @@ export default function Footer() {
               </Link>
             </li>
           </ul>
-        </div>
+        </div> */}
 
         {/* ======================================================== */}
         {/* Quick Links */}
         {/* ======================================================== */}
 
-        <div>
+        {/* <div>
           <h3 className="font-semibold text-lg mb-4">Quick Links</h3>
 
           <ul className="space-y-3 text-gray-400 text-sm sm:text-base">
@@ -94,13 +94,13 @@ export default function Footer() {
               </Link>
             </li>
           </ul>
-        </div>
+        </div> */}
 
         {/* ======================================================== */}
         {/* Social */}
         {/* ======================================================== */}
 
-        <div>
+        {/* <div>
           <h3 className="font-semibold text-lg mb-4">Follow Us</h3>
 
           <ul className="space-y-3 text-gray-400 text-sm sm:text-base">
@@ -137,8 +137,8 @@ export default function Footer() {
               </a>
             </li>
           </ul>
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
 
       {/* ========================================================== */}
       {/* Copyright */}

@@ -12,7 +12,7 @@ MONGO_URL = os.getenv("MONGO_URL")
 client = MongoClient(MONGO_URL)
 
 # Select the database
-db = client["onecart_db"]
+db = client["onecart"]
 
 # Products
 product_collection = db["products"]

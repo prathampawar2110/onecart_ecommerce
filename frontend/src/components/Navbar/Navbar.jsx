@@ -14,6 +14,7 @@ import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishListContext";
 
 export default function Navbar() {
+
   // ==========================================================
   // CART / WISHLIST
   // ==========================================================
@@ -203,6 +204,21 @@ export default function Navbar() {
     setIsLoggedIn(false);
 
     router.push("/login");
+  }
+
+  // ==========================================================
+  //  
+  // ==========================================================
+
+  function handleProtectedNavigation(path) {
+  const token = localStorage.getItem("access_token");
+
+  if (!token) {
+    router.push("/login");
+    return;
+  }
+
+  router.push(path);
   }
 
   // ==========================================================
@@ -452,10 +468,9 @@ export default function Navbar() {
           {/* ==================================================
               WISHLIST
           =================================================== */}
-
-          <Link href="/wishlist">
-            <button
+          <button
               aria-label="Wishlist"
+              onClick={ ()=> handleProtectedNavigation("/wishlist")}
               className="
                 flex
                 items-center
@@ -521,15 +536,16 @@ export default function Navbar() {
                 Wishlist
               </span>
             </button>
-          </Link>
+          
 
           {/* ==================================================
               CART
           =================================================== */}
 
-          <Link href="/cart">
-            <button
+          
+          <button
               aria-label="Cart"
+              onClick={ ()=> handleProtectedNavigation("/cart")}
               className="
                 flex
                 items-center
@@ -595,7 +611,7 @@ export default function Navbar() {
                 Cart
               </span>
             </button>
-          </Link>
+          
 
           {/* ==================================================
               PROFILE + PROFILE MENU
