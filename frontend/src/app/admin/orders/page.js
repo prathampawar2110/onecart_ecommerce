@@ -237,15 +237,23 @@ export default function AdminOrders() {
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
       {/* ============================================================= */}
-      {/* Header */}
+      {/* Header & Orders */}
       {/* ============================================================= */}
+      <div className="flex items-center justify-between">
+   
+        <div className="mb-6 sm:mb-8 sm:mt-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-black">Orders</h1>
 
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-black">Orders</h1>
+          <p className="text-gray-700 mt-1 text-sm sm:text-base">
+            Manage OneCart customer orders
+          </p>
+        </div>
 
-        <p className="text-gray-700 mt-1 text-sm sm:text-base">
-          Manage OneCart customer orders
-        </p>
+        <div className="w-full sm:w-auto inline-block bg-white rounded-xl shadow-md
+          px-2 sm:px-4 py-1 border-l-4 border-blue-500 mb-4">
+          <p className="text-sm text-gray-500">Total Orders</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-800">{orders.length}</p>
+        </div>
       </div>
 
       {/* ============================================================= */}

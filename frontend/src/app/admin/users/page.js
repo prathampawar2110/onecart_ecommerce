@@ -164,24 +164,19 @@ export default function AdminUsers() {
       {/* Header */}
       {/* ========================================================== */}
 
-      <div className="mb-6 sm:mb-8">
+      <div className="flex items-center justify-between">
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-          Users
-        </h1>
+        <div className="mb-6 sm:mb-8 mt-5">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+            Users
+          </h1>
 
-        <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
-          Manage OneCart customers and administrators
-        </p>
+          <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
+            Manage OneCart customers and administrators
+          </p>
+        </div>
 
-      </div>
-
-      {/* ========================================================== */}
-      {/* User Count */}
-      {/* ========================================================== */}
-
-      <div className="mb-6">
-
+    
         <div
           className="
             w-full
@@ -192,13 +187,14 @@ export default function AdminUsers() {
             rounded-xl
             shadow-md
 
-            px-5
-            sm:px-6
+            px-2
+            sm:px-4
 
-            py-4
+            py-1
 
             border-l-4
             border-blue-500
+            mb-6
           "
         >
 
@@ -211,6 +207,16 @@ export default function AdminUsers() {
           </p>
 
         </div>
+
+      </div>
+
+      {/* ========================================================== */}
+      {/* User Count */}
+      {/* ========================================================== */}
+
+      <div className="mb-6">
+
+        
 
       </div>
 

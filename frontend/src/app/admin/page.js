@@ -169,7 +169,7 @@ export default function AdminPage() {
       {/* Header */}
       {/* ========================================================== */}
 
-      <div className="mb-5 sm:mb-7 lg:mb-8">
+      <div className="mb-5 sm:mb-7 lg:mb-8 sm:mt-5">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
           Admin Dashboard
         </h1>

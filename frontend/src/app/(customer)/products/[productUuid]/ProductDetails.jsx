@@ -103,40 +103,6 @@ export default function ProductDetails({ productUuid }) {
     });
   }
 
-  // function getSelectedVariantPrice() {
-  //   const variantPrices = product.variant_prices || product.variant_prices || {};
-
-  //   const variantNames = Object.keys(product.variants || {});
-
-  //   // No variant prices
-  //   if (Object.keys(variantPrices).length === 0) {
-  //     return product.price;
-  //   }
-
-  //   // Check whether all variants are selected
-  //   const allSelected = variantNames.every(
-  //     (variantName) => selectedVariants[variantName],
-  //   );
-
-  //   // If not all variants are selected,
-  //   // show the base product price
-  //   if (!allSelected) {
-  //     return product.price;
-  //   }
-
-  //   // Create the SAME key format used by AdminProducts
-  //   const priceKey = variantNames
-  //     .map((variantName) => `${variantName}=${selectedVariants[variantName]}`)
-  //     .join("|");
-
-  //     console.log("PRICE KEY:", priceKey);
-  //     console.log("VARIANT PRICES:", variantPrices);
-  //     console.log("SELECTED PRICE:", variantPrices[priceKey]);
-
-
-  //   // Return variant price if available
-  //   return variantPrices[priceKey] ?? product.price;
-  // }
   function getSelectedVariantPrice() {
     const variantPrices = product.variantPrices || {};
     const variants = product.variants || {};
@@ -217,8 +183,8 @@ export default function ProductDetails({ productUuid }) {
   //--------------------------------------------------------------------------------------------------------------------------------------
 
   return (
-    <section className="px-3 sm:px-5 md:px-8 lg:px-10 py-5 sm:-py-7 md:py-10">
-      <div className="max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-10">
+    <section className="min-h-full flex items-center px-3 sm:px-5 md:px-8 lg:px-10 py-5 sm:py-7 md:py-10">
+      <div className="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-10">
         {/* ------------------------------------------------ */}
         {/* Product Image */}
         {/* ------------------------------------------------ */}
@@ -477,14 +443,50 @@ export default function ProductDetails({ productUuid }) {
         rounded-lg
         shadow-lg
         font-semibold
+
         flex
         items-center
         gap-2
+
+         whitespace-nowrap
     "
         >
           <span>⚠️</span>
 
           <span>Please login first to use Add to Cart.</span>
+        </div>
+      )}
+
+      {wishlistWarning && (
+        <div
+          className="
+        fixed
+        bottom-6
+        left-1/2
+        -translate-x-1/2
+        z-50
+
+        bg-yellow-100
+        border
+        border-yellow-400
+        text-yellow-800
+        px-6
+        py-3
+
+        rounded-lg
+        shadow-lg
+
+        font-semibold
+        flex
+        items-center
+        gap-2
+
+         whitespace-nowrap
+    "
+        >
+          <span>⚠️</span>
+
+          <span>Please login first to use Add to Wishlist.</span>
         </div>
       )}
 

@@ -5,16 +5,22 @@ import CustomerCategoryBar from "@/components/CustomerCategoryBar/CustomerCatego
 
 export default function CustomerLayout({ children }) {
     return (
-        <>
+        
+        <div className="min-h-screen flex flex-col">
+
             <Navbar />
 
             <CustomerCategoryBar />
 
             {/* <CategoryBar /> */}
 
-            {children}
+            <main className="flex-1">
+                {children}
+            </main>
+            
 
             <Footer />
-        </>
+        </div>
+        
     );
 }

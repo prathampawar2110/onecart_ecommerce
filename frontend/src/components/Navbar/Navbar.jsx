@@ -216,9 +216,9 @@ export default function Navbar() {
         bg-blue-400
         shadow-sm
         px-3
-        sm:px-4
-        md:px-5
-        lg:px-5
+        sm:px-0.5
+        md:px-4
+        lg:px-4.5
         xl:px-8
         py-1
         sm:py-1.5
@@ -233,7 +233,8 @@ export default function Navbar() {
           grid-cols-[1fr_auto]
 
           items-center
-          gap-2
+          gap-0
+          sm:mb-1
 
           /* Desktop */
           md:grid-cols-[1fr_auto_1fr]
