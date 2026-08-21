@@ -122,12 +122,15 @@ export default function Login() {
                     </p>
 
                     {message && (
-                        <p className="text-green-600 text-center mt-4">
+                        <p 
+                            role="status"
+                            aria-live="polite" 
+                            className="text-green-600 text-center mt-5">
                             {message}
                             </p>
                         )}
                         {error && (
-                            <p className="text-red-600 text-center mt-4">
+                            <p role="alert" className="text-red-600 text-center mt-5">
                                 {error}
                             </p>
                         )}
@@ -136,12 +139,13 @@ export default function Login() {
 
                         {/* email */}
                         <div>
-                            <label className="block mt-2 font-medium text-gray-700">
+                            <label htmlFor="email" className="block mt-2 font-medium text-gray-700">
                                 Email
                             </label>
 
                             <input
-                                type="email"
+                                id= "email"
+                                type="email" name="email"
                                 placeholder="Enter Your Email"
                                 value={email} onChange={ (event) => setEmail(event.target.value) }
                                 className="w-full border border-gray-300 rounded-lg px-4 py-3
@@ -151,12 +155,13 @@ export default function Login() {
 
                         {/* password */}
                         <div>
-                            <label className="block mb-2 font-medium text-gray-700">
+                            <label htmlFor="password" className="block mb-2 font-medium text-gray-700">
                                 Password
                             </label>
 
                             <input
-                                type="password"
+                                id="password"
+                                type="password" name="password"
                                 placeholder="Enter Your Password"
                                 value={password} onChange={ (event) => setPassword(event.target.value) }
                                 className="w-full border border-gray-300 rounded-lg px-4 py-3

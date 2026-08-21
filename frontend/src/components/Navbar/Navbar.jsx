@@ -37,6 +37,9 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
 
+  // Selected search result for keyboard navigation
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
   // ==========================================================
   // LOGIN / PROFILE / LOGOUT STATE
   // ==========================================================
@@ -79,6 +82,7 @@ export default function Navbar() {
     if (!searchText || searchText.trim() === "") {
       setSearchResults([]);
       setShowResults(false);
+      setSelectedIndex(-1);
       return;
     }
 
@@ -97,11 +101,16 @@ export default function Navbar() {
 
         // Show results while typing
         setShowResults(true);
+
+        // Reset keyboard selection
+        setSelectedIndex(-1);
+
       } catch (error) {
         console.error("Live search error:", error);
 
         setSearchResults([]);
         setShowResults(false);
+        setSelectedIndex(-1);
       }
     }, 300);
 
@@ -120,10 +129,63 @@ export default function Navbar() {
     }
 
     setShowResults(false);
+    setSelectedIndex(-1);
 
     router.push(
       `/search?query=${encodeURIComponent(searchText.trim())}`
     );
+  }
+
+  // ==========================================================
+  // SEARCH KEYBOARD NAVIGATION
+  // ==========================================================
+
+  function handleSearchKeyDown(event) {
+
+    // Only use the first 5 results because
+    // only 5 results are displayed in the dropdown.
+    const visibleResults = searchResults.slice(0, 5);
+
+    if (!showResults || visibleResults.length === 0) {
+      return;
+    }
+
+    // Arrow Down
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+
+      setSelectedIndex((prev) =>
+        prev < visibleResults.length - 1 ? prev + 1 : 0
+      );
+    }
+
+    // Arrow Up
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+
+      setSelectedIndex((prev) =>
+        prev > 0 ? prev - 1 : visibleResults.length - 1
+      );
+    }
+
+    // Escape
+    if (event.key === "Escape") {
+      setShowResults(false);
+      setSelectedIndex(-1);
+    }
+
+    // Enter
+    if (event.key === "Enter" && selectedIndex >= 0) {
+      event.preventDefault();
+
+      const product = visibleResults[selectedIndex];
+
+      router.push(`/products/${product.productUuid}`);
+
+      setShowResults(false);
+      setSearchText(product.name || "");
+      setSelectedIndex(-1);
+    }
   }
 
   // ==========================================================
@@ -159,8 +221,6 @@ export default function Navbar() {
 
       const user = await response.json();
 
-      console.log("Profile User:", user);
-
       // Check user role
       if (user.role === "admin") {
         // Admin → Admin Dashboard
@@ -169,6 +229,7 @@ export default function Navbar() {
         // Customer → User Profile
         router.push("/profile");
       }
+
     } catch (error) {
       console.error("Profile navigation error:", error);
 
@@ -188,6 +249,8 @@ export default function Navbar() {
     setSearchResults([]);
 
     setShowResults(false);
+
+    setSelectedIndex(-1);
   }
 
   // ==========================================================
@@ -207,18 +270,18 @@ export default function Navbar() {
   }
 
   // ==========================================================
-  //  
+  // PROTECTED NAVIGATION
   // ==========================================================
 
   function handleProtectedNavigation(path) {
-  const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem("access_token");
 
-  if (!token) {
-    router.push("/login");
-    return;
-  }
+    if (!token) {
+      router.push("/login");
+      return;
+    }
 
-  router.push(path);
+    router.push(path);
   }
 
   // ==========================================================
@@ -257,6 +320,7 @@ export default function Navbar() {
           md:gap-4
         "
       >
+
         {/* ====================================================
             LOGO
         ===================================================== */}
@@ -316,13 +380,15 @@ export default function Navbar() {
             md:col-span-1
             md:row-start-auto
             md:w-full
-            
-           lg:w-125
-           xl:w-160
+
+            lg:w-125
+            xl:w-160
+
             md:justify-self-center
           "
         >
           <div className="relative">
+
             {/* Search Icon */}
 
             <Search
@@ -348,6 +414,19 @@ export default function Navbar() {
               placeholder="Search for products..."
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
+              onKeyDown={handleSearchKeyDown}
+
+              aria-label="Search products"
+              role="combobox"
+              aria-expanded={showResults}
+              aria-controls="search-results"
+              aria-autocomplete="list"
+              aria-activedescendant={
+                selectedIndex >= 0
+                ? `search-option-${selectedIndex}`
+                : undefined
+              }
+
               className="
                 w-full
 
@@ -383,6 +462,9 @@ export default function Navbar() {
 
             {showResults && searchResults.length > 0 && (
               <div
+                id="search-results"
+                role="listbox"
+
                 className="
                   absolute
 
@@ -409,14 +491,24 @@ export default function Navbar() {
                   overflow-y-auto
                 "
               >
-                {searchResults.slice(0, 5).map((product) => (
+                {searchResults.slice(0, 5).map((product, index) => (
                   <Link
                     key={product.productUuid}
-                    onClick={() =>
-                      handleSearchResultClick(product)
+
+                    role="option"
+
+                    aria-selected={selectedIndex === index}
+
+                    href={`/products/${product.productUuid}`}                    
+
+                    onClick={(event) =>{
+                      event.preventDefault();
+                      handleSearchResultClick(product);
+                      router.push(`/products/${product.productUuid}`);
                     }
-                    href={`/products/${product.productUuid}`}
-                    className="
+                    }
+
+                    className={`
                       flex
                       items-center
                       gap-3
@@ -424,15 +516,19 @@ export default function Navbar() {
                       px-4
                       py-3
 
-                      hover:bg-gray-100
-
                       transition
 
                       border-b
                       border-gray-100
 
                       last:border-b-0
-                    "
+
+                      ${
+                        selectedIndex === index
+                          ? "bg-blue-100"
+                          : "hover:bg-gray-100"
+                      }
+                    `}
                   >
                     <div className="min-w-0">
                       <p className="font-medium text-black truncate">
@@ -465,159 +561,167 @@ export default function Navbar() {
             shrink-0
           "
         >
+
           {/* ==================================================
               WISHLIST
           =================================================== */}
+
           <button
-              aria-label="Wishlist"
-              onClick={ ()=> handleProtectedNavigation("/wishlist")}
-              className="
-                flex
-                items-center
-                justify-center
+            aria-label="Wishlist"
+            onClick={() =>
+              handleProtectedNavigation("/wishlist")
+            }
+            className="
+              flex
+              items-center
+              justify-center
 
-                gap-2
+              gap-2
 
-                px-1.5
-                sm:px-3
-                md:px-4
+              px-1.5
+              sm:px-3
+              md:px-4
 
-                py-2
+              py-2
 
-                rounded-lg
+              rounded-lg
 
-                text-white
+              text-white
 
-                hover:bg-yellow-500
-                hover:text-black
+              hover:bg-yellow-500
+              hover:text-black
 
-                transition
-                duration-300
+              transition
+              duration-300
 
-                cursor-pointer
-              "
-            >
-              <div className="relative">
-                <Heart className="w-4 h-4" />
+              cursor-pointer
+            "
+          >
+            <div className="relative">
 
-                {wishlistCount > 0 && (
-                  <span
-                    className="
-                      absolute
-                      -top-2
-                      -right-2
+              <Heart className="w-4 h-4" />
 
-                      min-w-4
-                      h-4
-                      px-1
+              {wishlistCount > 0 && (
+                <span
+                  className="
+                    absolute
+                    -top-2
+                    -right-2
 
-                      flex
-                      items-center
-                      justify-center
+                    min-w-4
+                    h-4
+                    px-1
 
-                      bg-red-500
-                      text-white
+                    flex
+                    items-center
+                    justify-center
 
-                      text-[10px]
-                      font-bold
+                    bg-red-500
+                    text-white
 
-                      rounded-full
+                    text-[10px]
+                    font-bold
 
-                      border-2
-                      border-blue-400
-                    "
-                  >
-                    {wishlistCount}
-                  </span>
-                )}
-              </div>
+                    rounded-full
 
-              <span className="hidden lg:inline">
-                Wishlist
-              </span>
-            </button>
-          
+                    border-2
+                    border-blue-400
+                  "
+                >
+                  {wishlistCount}
+                </span>
+              )}
+
+            </div>
+
+            <span className="hidden lg:inline">
+              Wishlist
+            </span>
+          </button>
 
           {/* ==================================================
               CART
           =================================================== */}
 
-          
           <button
-              aria-label="Cart"
-              onClick={ ()=> handleProtectedNavigation("/cart")}
-              className="
-                flex
-                items-center
-                justify-center
+            aria-label="Cart"
+            onClick={() =>
+              handleProtectedNavigation("/cart")
+            }
+            className="
+              flex
+              items-center
+              justify-center
 
-                gap-2
+              gap-2
 
-                px-1
-                sm:px-3
-                md:px-4
+              px-1
+              sm:px-3
+              md:px-4
 
-                py-2
+              py-2
 
-                rounded-lg
+              rounded-lg
 
-                text-white
+              text-white
 
-                hover:bg-yellow-500
-                hover:text-black
+              hover:bg-yellow-500
+              hover:text-black
 
-                transition
-                duration-300
+              transition
+              duration-300
 
-                cursor-pointer
-              "
-            >
-              <div className="relative">
-                <ShoppingCart className="w-5 h-5" />
+              cursor-pointer
+            "
+          >
+            <div className="relative">
 
-                {cartCount > 0 && (
-                  <span
-                    className="
-                      absolute
-                      -top-2
-                      -right-2
+              <ShoppingCart className="w-5 h-5" />
 
-                      min-w-4
-                      h-4
-                      px-1
+              {cartCount > 0 && (
+                <span
+                  className="
+                    absolute
+                    -top-2
+                    -right-2
 
-                      flex
-                      items-center
-                      justify-center
+                    min-w-4
+                    h-4
+                    px-1
 
-                      bg-red-500
-                      text-white
+                    flex
+                    items-center
+                    justify-center
 
-                      text-[10px]
-                      font-bold
+                    bg-red-500
+                    text-white
 
-                      rounded-full
+                    text-[10px]
+                    font-bold
 
-                      border-2
-                      border-blue-400
-                    "
-                  >
-                    {cartCount}
-                  </span>
-                )}
-              </div>
+                    rounded-full
 
-              <span className="hidden md:inline">
-                Cart
-              </span>
-            </button>
-          
+                    border-2
+                    border-blue-400
+                  "
+                >
+                  {cartCount}
+                </span>
+              )}
+
+            </div>
+
+            <span className="hidden md:inline">
+              Cart
+            </span>
+          </button>
 
           {/* ==================================================
               PROFILE + PROFILE MENU
           =================================================== */}
 
           <div className="relative">
+
             {/* Profile Button */}
 
             <button
@@ -625,6 +729,7 @@ export default function Navbar() {
                 setShowProfileMenu((previous) => !previous)
               }
               aria-label="Profile"
+
               className="
                 flex
                 items-center
@@ -652,6 +757,7 @@ export default function Navbar() {
               "
             >
               <div className="relative">
+
                 <CircleUserRound className="w-5 h-5" />
 
                 {isLoggedIn && (
@@ -673,6 +779,7 @@ export default function Navbar() {
                     "
                   />
                 )}
+
               </div>
 
               <span className="hidden md:inline">
@@ -708,6 +815,7 @@ export default function Navbar() {
                   overflow-hidden
                 "
               >
+
                 {/* Profile / Admin Dashboard */}
 
                 <button
@@ -715,6 +823,7 @@ export default function Navbar() {
                     setShowProfileMenu(false);
                     handleProfileClick();
                   }}
+
                   className="
                     w-full
 
@@ -743,6 +852,7 @@ export default function Navbar() {
                       setShowProfileMenu(false);
                       setShowLogoutPopup(true);
                     }}
+
                     className="
                       w-full
 
@@ -763,8 +873,10 @@ export default function Navbar() {
                     Logout
                   </button>
                 )}
+
               </div>
             )}
+
           </div>
         </div>
       </div>
@@ -804,6 +916,7 @@ export default function Navbar() {
               p-6
             "
           >
+
             {/* Title */}
 
             <h2 className="text-xl font-bold text-gray-800">
@@ -819,10 +932,12 @@ export default function Navbar() {
             {/* Buttons */}
 
             <div className="flex gap-3 mt-6">
+
               {/* Cancel */}
 
               <button
                 onClick={() => setShowLogoutPopup(false)}
+
                 className="
                   flex-1
 
@@ -850,6 +965,7 @@ export default function Navbar() {
 
               <button
                 onClick={handleLogout}
+
                 className="
                   flex-1
 
@@ -871,7 +987,7 @@ export default function Navbar() {
               >
                 Logout
               </button>
-              
+
             </div>
           </div>
         </div>
