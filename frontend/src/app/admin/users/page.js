@@ -4,6 +4,7 @@ const API_URL = "http://127.0.0.1:8000";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Search, ShieldCheck, UserRound, Users } from "lucide-react";
 
 export default function AdminUsers() {
   const router = useRouter();
@@ -11,25 +12,20 @@ export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // ----------------------------------------------------------------
-  // Fetch Users
-  // ----------------------------------------------------------------
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     async function fetchUsers() {
       const token = localStorage.getItem("access_token");
 
-      // No login
       if (!token) {
-        router.push("/login");
+        router.replace("/login");
         return;
       }
 
       try {
         const response = await fetch(`${API_URL}/admin/users`, {
           method: "GET",
-
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -37,22 +33,15 @@ export default function AdminUsers() {
 
         const data = await response.json();
 
-        console.log("Admin Users:", data);
-
         if (!response.ok) {
-          throw new Error(
-            data.detail || "Failed to fetch users",
-          );
+          throw new Error(data.detail || "Failed to fetch users");
         }
 
         setUsers(data);
       } catch (error) {
         console.error("Admin Users Error:", error);
-
         setError(error.message);
-
-        // Unauthorized / non-admin
-        router.push("/");
+        router.replace("/");
       } finally {
         setLoading(false);
       }
@@ -61,79 +50,93 @@ export default function AdminUsers() {
     fetchUsers();
   }, [router]);
 
-  // Created Date
   function formatCreatedDate(createdAt) {
     if (!createdAt) {
       return "N/A";
     }
 
-    return new Date(createdAt).toLocaleDateString("en-IN" , {
+    return new Date(createdAt).toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
   }
 
-  // ----------------------------------------------------------------
-  // Loading
-  // ----------------------------------------------------------------
+  // ==========================================================
+  // ⭐ NEW — SHORT USER ID FOR ADMIN DISPLAY
+  // ==========================================================
+  function formatUserId(userUuid) {
+    if (!userUuid) {
+      return "N/A";
+    }
+
+    return `USR-${userUuid.slice(-5).toUpperCase()}`;
+  }
+
+  function getRoleClasses(role) {
+    if (role === "admin") {
+      return "bg-violet-50 text-violet-700 ring-1 ring-violet-200";
+    }
+
+    return "bg-blue-50 text-blue-700 ring-1 ring-blue-200";
+  }
+
+  const adminUsers = users.filter(
+    (user) => user.role === "admin",
+  ).length;
+
+  const customerUsers = users.filter(
+    (user) => user.role !== "admin",
+  ).length;
+
+  // ==========================================================
+  // ⭐ UPDATED — SEARCH SUPPORTS:
+  // Name
+  // Email
+  // Role
+  // Full UUID
+  // Short User ID (USR-XXXXX)
+  // ==========================================================
+  const filteredUsers = users.filter((user) => {
+    const search = searchText.toLowerCase();
+
+    const shortUserId = formatUserId(user.userUuid).toLowerCase();
+
+    return (
+      user.name?.toLowerCase().includes(search) ||
+      user.email?.toLowerCase().includes(search) ||
+      user.role?.toLowerCase().includes(search) ||
+      user.userUuid?.toLowerCase().includes(search) ||
+      shortUserId.includes(search)
+    );
+  });
 
   if (loading) {
     return (
-      <div
-        className="
-          min-h-[60vh]
-          flex
-          justify-center
-          items-center
-          px-4
-          pt-14
-          sm:pt-16
-        "
-      >
-        <p className="text-lg sm:text-xl text-gray-700 text-center">
-          Loading Users...
-        </p>
+      <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+        <div className="h-8 w-36 rounded bg-slate-200 animate-pulse" />
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-3">
+          {[...Array(3)].map((_, index) => (
+            <div
+              key={index}
+              className="h-28 rounded-lg bg-white shadow-sm animate-pulse"
+            />
+          ))}
+        </div>
       </div>
     );
   }
 
-  // ----------------------------------------------------------------
-  // Error
-  // ----------------------------------------------------------------
-
   if (error) {
     return (
-      <div
-        className="
-          min-h-[60vh]
-          bg-gray-100
-          flex
-          justify-center
-          items-center
-          px-4
-          pt-14
-          sm:pt-16
-        "
-      >
-        <div
-          className="
-            w-full
-            max-w-md
-            bg-red-50
-            border
-            border-red-200
-            rounded-xl
-            p-5
-            sm:p-6
-            text-center
-          "
-        >
-          <h2 className="text-xl sm:text-2xl font-bold text-red-700 mb-2">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-6">
+        <div className="w-full max-w-md rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+          <h2 className="text-xl font-bold text-red-700">
             Unable to Load Users
           </h2>
 
-          <p className="text-sm sm:text-base text-red-600 wrap-break-words">
+          <p className="mt-2 text-sm text-red-600 wrap-break-words">
             {error}
           </p>
         </div>
@@ -141,401 +144,303 @@ export default function AdminUsers() {
     );
   }
 
-  // ----------------------------------------------------------------
-  // Dashboard
-  // ----------------------------------------------------------------
-
   return (
-    <div
-      className="
-        min-h-screen
-        bg-gray-100
+    <div className="min-h-screen bg-slate-50 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
 
-        px-3
-        sm:px-5
-        md:px-6
-        lg:px-8
+        {/* ======================================================
+            HEADER
+        ====================================================== */}
 
-        pt-6
-        sm:pt-8
-      "
-    >
-      {/* ========================================================== */}
-      {/* Header */}
-      {/* ========================================================== */}
+        <header className="border-b border-slate-200 pb-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            Customers
+          </p>
 
-      <div className="flex items-center justify-between">
-
-        <div className="mb-6 sm:mb-8 mt-5">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+          <h1 className="mt-2 text-2xl font-bold text-slate-950 sm:text-3xl">
             Users
           </h1>
 
-          <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
-            Manage OneCart customers and administrators
+          <p className="mt-1 text-sm text-slate-500 sm:text-base">
+            View registered customers and administrator accounts.
           </p>
-        </div>
+        </header>
 
-    
-        <div
-          className="
-            w-full
-            sm:w-auto
-            inline-block
+        {/* ======================================================
+            SUMMARY CARDS
+        ====================================================== */}
 
-            bg-white
-            rounded-xl
-            shadow-md
+        <section className="mt-5 grid gap-4 sm:grid-cols-3">
 
-            px-2
-            sm:px-4
+          {/* Total Users */}
 
-            py-1
+          <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Total users
+                </p>
 
-            border-l-4
-            border-blue-500
-            mb-6
-          "
-        >
+                <p className="mt-2 text-2xl font-bold text-slate-950">
+                  {users.length}
+                </p>
+              </div>
 
-          <p className="text-sm text-gray-500">
-            Total Users
-          </p>
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                <Users className="h-5 w-5" />
+              </span>
+            </div>
+          </article>
 
-          <p className="text-2xl sm:text-3xl font-bold text-gray-800 mt-1">
-            {users.length}
-          </p>
+          {/* Customers */}
 
-        </div>
+          <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Customers
+                </p>
 
-      </div>
+                <p className="mt-2 text-2xl font-bold text-slate-950">
+                  {customerUsers}
+                </p>
+              </div>
 
-      {/* ========================================================== */}
-      {/* User Count */}
-      {/* ========================================================== */}
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                <UserRound className="h-5 w-5" />
+              </span>
+            </div>
+          </article>
 
-      <div className="mb-6">
+          {/* Admins */}
 
-        
+          <article className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Admins
+                </p>
 
-      </div>
+                <p className="mt-2 text-2xl font-bold text-slate-950">
+                  {adminUsers}
+                </p>
+              </div>
 
-      {/* ========================================================== */}
-      {/* No Users */}
-      {/* ========================================================== */}
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
+                <ShieldCheck className="h-5 w-5" />
+              </span>
+            </div>
+          </article>
+        </section>
 
-      {users.length === 0 ? (
+        {/* ======================================================
+            SEARCH
+        ====================================================== */}
 
-        <div
-          className="
-            bg-white
-            rounded-xl
-            shadow-md
-            p-6
-            sm:p-8
-            text-center
-          "
-        >
+        <section className="mt-5">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-          <p className="text-gray-500 text-sm sm:text-base">
-            No users found.
-          </p>
+            <input
+              type="text"
+              placeholder="Search by name, email, role or user ID"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+        </section>
 
-        </div>
+        {/* ======================================================
+            USERS
+        ====================================================== */}
 
-      ) : (
+        {users.length === 0 ? (
+          <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
+            <p className="text-sm font-medium text-slate-600">
+              No users found.
+            </p>
+          </div>
+        ) : (
+          <section className="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
 
-        <div
-          className="
-            bg-white
-            rounded-xl
-            shadow-md
-            overflow-hidden
-          "
-        >
+            {/* ==================================================
+                DESKTOP TABLE
+            ================================================== */}
 
-          {/* ====================================================== */}
-          {/* Desktop Table */}
-          {/* ====================================================== */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full min-w-208">
 
-          <div className="hidden md:block overflow-x-auto">
+                <thead className="bg-slate-950 text-white">
+                  <tr>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      User
+                    </th>
 
-            <table className="w-full min-w-175">
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Email
+                    </th>
 
-              <thead className="bg-gray-900 text-white">
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Role
+                    </th>
 
-                <tr>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      User ID
+                    </th>
 
-                  <th className="text-left px-4 lg:px-6 py-4">
-                    User ID
-                  </th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Created
+                    </th>
+                  </tr>
+                </thead>
 
-                  <th className="text-left px-4 lg:px-6 py-4">
-                    Name
-                  </th>
+                <tbody className="divide-y divide-slate-100">
 
-                  <th className="text-left px-4 lg:px-6 py-4">
-                    Email
-                  </th>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user, index) => (
+                      <tr
+                        key={user.userUuid || `user-${index}`}
+                        className="transition hover:bg-slate-50"
+                      >
 
-                  <th className="text-left px-4 lg:px-6 py-4">
-                    Role
-                  </th>
+                        {/* User */}
 
-                  <th className="text-left px-4 lg:px-6 py-4">
-                    Created At
-                  </th>
+                        <td className="px-5 py-4">
+                          <p className="font-semibold capitalize text-slate-950">
+                            {user.name}
+                          </p>
+                        </td>
 
-                </tr>
+                        {/* Email */}
 
-              </thead>
+                        <td className="px-5 py-4">
+                          <p className="max-w-[18rem] truncate text-sm text-slate-500">
+                            {user.email}
+                          </p>
+                        </td>
 
-              <tbody>
+                        {/* Role */}
 
-                {users.map((user, index) => (
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-bold capitalize ${getRoleClasses(
+                              user.role,
+                            )}`}
+                          >
+                            {user.role}
+                          </span>
+                        </td>
 
-                  <tr
-                    key={user.userUuid || `user-${index}`}
-                    className="
-                      border-b
-                      border-gray-200
-                      hover:bg-gray-50
-                    "
+                        {/* ⭐ CHANGED — SHORT USER ID */}
+
+                        <td className="px-5 py-4">
+                          <p className="text-sm font-semibold text-slate-700">
+                            {formatUserId(user.userUuid)}
+                          </p>
+                        </td>
+
+                        {/* Created */}
+
+                        <td className="px-5 py-4 text-sm text-slate-500">
+                          {formatCreatedDate(user.createdAt)}
+                        </td>
+
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="px-6 py-10 text-center text-sm text-slate-500"
+                      >
+                        No users found
+                      </td>
+                    </tr>
+                  )}
+
+                </tbody>
+              </table>
+            </div>
+
+            {/* ==================================================
+                MOBILE USER CARDS
+            ================================================== */}
+
+            <div className="divide-y divide-slate-100 md:hidden">
+
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user, index) => (
+                  <article
+                    key={user.userUuid || `mobile-user-${index}`}
+                    className="p-4 sm:p-5"
                   >
 
-                    {/* User UUID */}
+                    {/* Header */}
 
-                    <td className="px-4 lg:px-6 py-4 max-w-55">
+                    <div className="flex items-start justify-between gap-3">
 
-                      <span
-                        className="
-                          text-xs
-                          sm:text-sm
-                          font-semibold
-                          text-gray-800
-                          break-all
-                        "
-                      >
-                        {user.userUuid}
-                      </span>
+                      <div className="min-w-0">
 
-                    </td>
+                        <p className="font-bold capitalize text-slate-950">
+                          {user.name}
+                        </p>
 
-                    {/* Name */}
+                        <p className="mt-1 break-all text-sm text-slate-500">
+                          {user.email}
+                        </p>
 
-                    <td className="px-4 lg:px-6 py-4">
+                      </div>
 
                       <span
-                        className="
-                          text-sm
-                          font-medium
-                          text-gray-800
-                          capitalize
-                          wrap-break-words
-                        "
-                      >
-                        {user.name}
-                      </span>
-
-                    </td>
-
-                    {/* Email */}
-
-                    <td className="px-4 lg:px-6 py-4">
-
-                      <span
-                        className="
-                          text-sm
-                          text-gray-700
-                          break-all
-                        "
-                      >
-                        {user.email}
-                      </span>
-
-                    </td>
-
-                    {/* Role */}
-
-                    <td className="px-4 lg:px-6 py-4">
-
-                      <span
-                        className={`
-                          inline-flex
-                          px-3
-                          py-1
-                          rounded-full
-                          text-xs
-                          font-semibold
-                          whitespace-nowrap
-
-                          ${
-                            user.role === "admin"
-                              ? "bg-purple-100 text-purple-700"
-                              : "bg-blue-100 text-blue-700"
-                          }
-                        `}
+                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold capitalize ${getRoleClasses(
+                          user.role,
+                        )}`}
                       >
                         {user.role}
                       </span>
 
-                    </td>
+                    </div>
 
-                    {/* Created At */}
-                    <td className="px-4 lg:px-6 py-4">
-                      <span className="text-sm text-gray-800 whitespace-nowrap">
+                    {/* User ID */}
+
+                    <div className="mt-4">
+                      <p className="text-xs text-slate-400">
+                        User ID
+                      </p>
+
+                      {/* ⭐ CHANGED — SHORT USER ID */}
+
+                      <p className="mt-1 text-sm font-semibold text-slate-700">
+                        {formatUserId(user.userUuid)}
+                      </p>
+                    </div>
+
+                    {/* Created */}
+
+                    <div className="mt-4">
+                      <p className="text-xs text-slate-400">
+                        Created
+                      </p>
+
+                      <p className="mt-1 text-sm text-slate-700">
                         {formatCreatedDate(user.createdAt)}
-                      </span>
+                      </p>
+                    </div>
 
-                    </td>
-
-                  </tr>
-
-                ))}
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-          {/* ====================================================== */}
-          {/* Mobile User Cards */}
-          {/* ====================================================== */}
-
-          <div className="md:hidden divide-y divide-gray-200">
-
-            {users.map((user, index) => (
-
-              <div
-                key={user.userUuid || `user-${index}`}
-                className="
-                  p-4
-                  sm:p-5
-                "
-              >
-
-                {/* Header */}
-
-                <div
-                  className="
-                    flex
-                    flex-col
-                    xs:flex-row
-                    xs:justify-between
-                    xs:items-start
-                    gap-3
-                  "
-                >
-
-                  <div className="min-w-0">
-
-                    <p className="text-xs text-gray-500 mb-1">
-                      Name
-                    </p>
-
-                    <p
-                      className="
-                        text-base
-                        font-semibold
-                        text-gray-800
-                        capitalize
-                        wrap-break-words
-                      "
-                    >
-                      {user.name}
-                    </p>
-
-                  </div>
-
-                  {/* Role */}
-
-                  <span
-                    className={`
-                      self-start
-                      shrink-0
-                      px-2.5
-                      py-1
-                      rounded-full
-                      text-xs
-                      font-semibold
-                      whitespace-nowrap
-
-                      ${
-                        user.role === "admin"
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-blue-100 text-blue-700"
-                      }
-                    `}
-                  >
-                    {user.role}
-                  </span>
-
+                  </article>
+                ))
+              ) : (
+                <div className="px-6 py-10 text-center text-sm text-slate-500">
+                  No users found
                 </div>
+              )}
 
-                {/* Email */}
+            </div>
+          </section>
+        )}
 
-                <div className="mt-4">
-
-                  <p className="text-xs text-gray-500 mb-1">
-                    Email
-                  </p>
-
-                  <p
-                    className="
-                      text-sm
-                      text-gray-700
-                      break-all
-                    "
-                  >
-                    {user.email}
-                  </p>
-
-                </div>
-
-                {/* User UUID */}
-
-                <div className="mt-4">
-
-                  <p className="text-xs text-gray-500 mb-1">
-                    User ID
-                  </p>
-
-                  <p
-                    className="
-                      text-xs
-                      sm:text-sm
-                      text-gray-700
-                      break-all
-                    "
-                  >
-                    {user.userUuid}
-                  </p>
-
-                </div>
-
-                {/* Created At */}
-                <div className="mt-4">
-                  <p className="text-xs text-gray-500 mb-1">
-                    Created At
-                  </p>
-
-                  <p className="text-sm text-gray-700">
-                    {formatCreatedDate(user.createdAt)}
-                  </p>
-
-                </div>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        </div>
-
-      )}
-
+      </div>
     </div>
   );
 }

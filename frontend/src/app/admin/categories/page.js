@@ -1,38 +1,59 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Edit3, FolderTree, Plus, Search, Trash2 } from "lucide-react";
 
 import {
-  getCategories,
   addCategory,
-  updateCategory,
   deleteCategory,
+  getCategories,
+  updateCategory,
 } from "@/services/categoryService";
 
 export default function AdminCategories() {
-  // --------------------------------------------------
-  // State
-  // --------------------------------------------------
-
   const [categories, setCategories] = useState([]);
-
   const [loading, setLoading] = useState(true);
-
   const [error, setError] = useState("");
-
-  // Search
   const [searchText, setSearchText] = useState("");
-
-  // Add/Edit form
   const [showForm, setShowForm] = useState(false);
-
   const [categoryName, setCategoryName] = useState("");
-
   const [editCategory, setEditCategory] = useState(null);
 
-  // --------------------------------------------------
-  // Format Category Date
-  // --------------------------------------------------
+  async function fetchCategories() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await getCategories();
+
+      setCategories(data);
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+      setError(error.message || "Failed to load categories");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getCategories();
+
+        setCategories(data);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+        setError(error.message || "Failed to load categories");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCategories();
+  }, []);
 
   function formatCategoryDate(date) {
     if (!date) {
@@ -46,31 +67,6 @@ export default function AdminCategories() {
     });
   }
 
-  // --------------------------------------------------
-  // Fetch Categories
-  // --------------------------------------------------
-
-  async function fetchCategories() {
-    try {
-      setLoading(true);
-      setError("");
-
-      const data = await getCategories();
-
-      setCategories(data);
-    } catch (error) {
-      console.error("Failed to fetch categories:", error);
-
-      setError(error.message || "Failed to load categories");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // --------------------------------------------------
-  // Add Category
-  // --------------------------------------------------
-
   async function handleAddCategory() {
     const name = categoryName.trim();
 
@@ -81,38 +77,22 @@ export default function AdminCategories() {
 
     try {
       setError("");
-
       await addCategory(name);
-
       await fetchCategories();
-
       setCategoryName("");
-
       setShowForm(false);
     } catch (error) {
       console.error("Add Category Error:", error);
-
       setError(error.message || "Failed to add category");
     }
   }
 
-  // --------------------------------------------------
-  // Edit Category
-  // --------------------------------------------------
-
   function handleEditCategory(category) {
     setEditCategory(category);
-
     setCategoryName(category.name);
-
     setShowForm(true);
-
     setError("");
   }
-
-  // --------------------------------------------------
-  // Update Category
-  // --------------------------------------------------
 
   async function handleUpdateCategory() {
     const name = categoryName.trim();
@@ -124,26 +104,16 @@ export default function AdminCategories() {
 
     try {
       setError("");
-
       await updateCategory(editCategory.categoryUuid, name);
-
       await fetchCategories();
-
       setCategoryName("");
-
       setEditCategory(null);
-
       setShowForm(false);
     } catch (error) {
       console.error("Update Category Error:", error);
-
       setError(error.message || "Failed to update category");
     }
   }
-
-  // --------------------------------------------------
-  // Delete Category
-  // --------------------------------------------------
 
   async function handleDeleteCategory(categoryUuid) {
     const confirmDelete = window.confirm(
@@ -156,56 +126,27 @@ export default function AdminCategories() {
 
     try {
       setError("");
-
       await deleteCategory(categoryUuid);
-
       await fetchCategories();
     } catch (error) {
       console.error("Delete Category Error:", error);
-
       setError(error.message || "Failed to delete category");
     }
   }
 
-  // --------------------------------------------------
-  // Open Add Form
-  // --------------------------------------------------
-
   function handleAddButton() {
     setEditCategory(null);
-
     setCategoryName("");
-
     setError("");
-
     setShowForm(true);
   }
 
-  // --------------------------------------------------
-  // Cancel Form
-  // --------------------------------------------------
-
   function handleCancel() {
     setShowForm(false);
-
     setEditCategory(null);
-
     setCategoryName("");
-
     setError("");
   }
-
-  // --------------------------------------------------
-  // useEffect
-  // --------------------------------------------------
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  // --------------------------------------------------
-  // Filter Categories
-  // --------------------------------------------------
 
   const filteredCategories = categories.filter((category) => {
     const search = searchText.toLowerCase();
@@ -216,428 +157,250 @@ export default function AdminCategories() {
     );
   });
 
-  // --------------------------------------------------
-  // Loading
-  // --------------------------------------------------
-
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen px-4">
-        <p className="text-lg sm:text-xl text-blue-600 text-center">
-          Loading Categories...
-        </p>
+      <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+        <div className="h-8 w-48 rounded bg-slate-200 animate-pulse" />
+        <div className="mt-6 h-80 rounded-lg bg-white shadow-sm animate-pulse" />
       </div>
     );
   }
 
-  // --------------------------------------------------
-  // UI
-  // --------------------------------------------------
-
   return (
-    <div className="min-h-screen bg-gray-100 px-3 pt-8 pb-5 sm:px-6 sm:pt-10 sm:pb-8 lg:px-8">
-      {/* ========================================================== */}
-      {/* Header */}
-      {/* ========================================================== */}
-
-      <div
-        className="
-          flex
-          flex-col
-          xl:flex-row
-          xl:items-center
-          gap-4
-          mb-6
-          sm:mb-8
-        "
-      >
-        {/* Title */}
-
-        <div className="shrink-0">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
-            Categories
-          </h1>
-
-          <p className="text-gray-500 mt-1 text-sm sm:text-base">
-            Manage your OneCart categories
-          </p>
-        </div>
-
-        {/* Search */}
-
-        <div className="w-full xl:flex-1 xl:mx-4">
-          <input
-            type="text"
-            placeholder="Search category..."
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-            className="
-              w-full
-              px-4
-              py-3
-              border
-              border-gray-300
-              rounded-lg
-              text-black
-              bg-white
-              focus:outline-none
-              focus:ring-2
-              focus:ring-blue-500
-            "
-          />
-        </div>
-
-        {/* Add Button */}
-
-        <button
-          onClick={handleAddButton}
-          className="
-            w-full
-            xl:w-auto
-            bg-blue-600
-            text-white
-            px-5
-            py-3
-            rounded-lg
-            font-semibold
-            hover:bg-blue-700
-            transition
-            cursor-pointer
-            whitespace-nowrap
-          "
-        >
-          + Add Category
-        </button>
-      </div>
-
-      {/* ========================================================== */}
-      {/* Error */}
-      {/* ========================================================== */}
-
-      {error && (
-        <div
-          className="
-            bg-red-100
-            border
-            border-red-300
-            text-red-700
-            px-4
-            py-3
-            rounded-lg
-            mb-6
-            text-sm
-            sm:text-base
-          "
-        >
-          {error}
-        </div>
-      )}
-
-      {/* ========================================================== */}
-      {/* Add / Edit Form */}
-      {/* ========================================================== */}
-
-      {showForm && (
-        <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 mb-6 sm:mb-8">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-5 sm:mb-6">
-            {editCategory ? "Edit Category" : "Add New Category"}
-          </h2>
-
+    <div className="min-h-screen bg-slate-50 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 xl:flex-row xl:items-center xl:justify-between">
           <div>
-            <label className="block mb-2 font-medium text-gray-700">
-              Category Name
-            </label>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+              Catalog
+            </p>
+
+            <h1 className="mt-2 text-2xl font-bold text-slate-950 sm:text-3xl">
+              Categories
+            </h1>
+
+            <p className="mt-1 text-sm text-slate-500 sm:text-base">
+              Organize the storefront catalog into clear shopping paths.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleAddButton}
+            className="inline-flex w-full items-center cursor-pointer justify-center gap-2 rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 xl:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            Add Category
+          </button>
+        </header>
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-4 top-5.5 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
             <input
               type="text"
-              value={categoryName}
-              onChange={(event) => setCategoryName(event.target.value)}
-              placeholder="Enter category name"
-              className="
-                w-full
-                px-4
-                py-3
-                border
-                border-gray-300
-                rounded-lg
-                text-black
-                focus:outline-none
-                focus:ring-2
-                focus:ring-blue-500
-              "
+              placeholder="Search by category or slug"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
             />
           </div>
 
-          {/* Buttons */}
+          <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-slate-500">
+                  Total categories
+                </p>
 
-          <div
-            className="
-              flex
-              flex-col-reverse
-              sm:flex-row
-              justify-end
-              gap-3
-              mt-6
-            "
-          >
-            <button
-              type="button"
-              onClick={handleCancel}
-              className="
-                w-full
-                sm:w-auto
-                px-5
-                py-3
-                border
-                border-gray-300
-                rounded-lg
-                text-gray-700
-                hover:bg-gray-100
-                transition
-                cursor-pointer
-              "
-            >
-              Cancel
-            </button>
-
-            <button
-              type="button"
-              onClick={editCategory ? handleUpdateCategory : handleAddCategory}
-              className="
-                w-full
-                sm:w-auto
-                px-5
-                py-3
-                bg-blue-600
-                text-white
-                rounded-lg
-                font-semibold
-                hover:bg-blue-700
-                transition
-                cursor-pointer
-              "
-            >
-              {editCategory ? "Update Category" : "Add Category"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================== */}
-      {/* Desktop Category Table */}
-      {/* ========================================================== */}
-
-      <div className="hidden sm:block bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-900 text-white">
-              <tr>
-                <th className="text-left px-4 sm:px-6 py-4">Category Name</th>
-
-                <th className="text-left px-4 sm:px-6 py-4">Slug</th>
-
-                <th className="text-left px-4 sm:px-6 py-4">Created</th>
-
-                <th className="text-left px-4 sm:px-6 py-4">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {filteredCategories.length > 0 ? (
-                filteredCategories.map((category) => (
-                  <tr
-                    key={category.categoryUuid}
-                    className="
-                      border-b
-                      border-gray-200
-                      hover:bg-gray-50
-                    "
-                  >
-                    {/* Name */}
-
-                    <td className="px-4 sm:px-6 py-4">
-                      <span className="font-semibold text-gray-800">
-                        {category.name}
-                      </span>
-                    </td>
-
-                    {/* Slug */}
-
-                    <td className="px-4 sm:px-6 py-4 text-gray-600">
-                      {category.slug}
-                    </td>
-
-                    {/* Created Date */}
-
-                    <td className="px-4 sm:px-6 py-4">
-                      <span className="text-sm text-gray-700 whitespace-nowrap">
-                        {formatCategoryDate(category.createdAt)}
-                      </span>
-                    </td>
-
-                    {/* Actions */}
-
-                    <td className="px-4 sm:px-6 py-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditCategory(category)}
-                          className="
-                            px-3
-                            py-2
-                            bg-blue-100
-                            text-blue-600
-                            rounded-lg
-                            hover:bg-blue-200
-                            cursor-pointer
-                            text-sm
-                            font-medium
-                          "
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            handleDeleteCategory(category.categoryUuid)
-                          }
-                          className="
-                            px-3
-                            py-2
-                            bg-red-100
-                            text-red-600
-                            rounded-lg
-                            hover:bg-red-200
-                            cursor-pointer
-                            text-sm
-                            font-medium
-                          "
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="4"
-                    className="
-                      px-6
-                      py-10
-                      text-center
-                      text-gray-500
-                    "
-                  >
-                    {searchText
-                      ? "No categories found"
-                      : "No categories available"}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* ========================================================== */}
-      {/* Mobile Category Cards */}
-      {/* ========================================================== */}
-
-      <div className="sm:hidden space-y-4">
-        {filteredCategories.length > 0 ? (
-          filteredCategories.map((category) => (
-            <div
-              key={category.categoryUuid}
-              className="
-                bg-white
-                rounded-xl
-                shadow-md
-                p-4
-                border
-                border-gray-100
-              "
-            >
-              {/* Category Information */}
-
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-1">Category Name</p>
-
-                <p className="text-base font-semibold text-gray-800">
-                  {category.name}
+                <p className="mt-1 text-2xl font-bold text-slate-950">
+                  {categories.length}
                 </p>
               </div>
 
-              <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-1">Slug</p>
-
-                <p className="text-sm text-gray-600 break-all">
-                  {category.slug}
-                </p>
-
-                <div className="mb-4">
-                  <p className="text-xs text-gray-500 mb-1">Created</p>
-
-                  <p className="text-sm text-gray-700">
-                    {formatCategoryDate(category.createdAt)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Actions */}
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleEditCategory(category)}
-                  className="
-                    flex-1
-                    px-3
-                    py-2.5
-                    bg-blue-100
-                    text-blue-600
-                    rounded-lg
-                    hover:bg-blue-200
-                    cursor-pointer
-                    font-medium
-                  "
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={() => handleDeleteCategory(category.categoryUuid)}
-                  className="
-                    flex-1
-                    px-3
-                    py-2.5
-                    bg-red-100
-                    text-red-600
-                    rounded-lg
-                    hover:bg-red-200
-                    cursor-pointer
-                    font-medium
-                  "
-                >
-                  Delete
-                </button>
-              </div>
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                <FolderTree className="h-3 w-3" />
+              </span>
             </div>
-          ))
-        ) : (
-          <div
-            className="
-              bg-white
-              rounded-xl
-              shadow-md
-              px-6
-              py-10
-              text-center
-              text-gray-500
-            "
-          >
-            {searchText ? "No categories found" : "No categories available"}
+          </div>
+        </section>
+
+        {error && (
+          <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {error}
           </div>
         )}
+
+        {showForm && (
+          <section className="mt-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+            <h2 className="text-lg font-bold text-slate-950">
+              {editCategory ? "Edit Category" : "Add Category"}
+            </h2>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
+              <div>
+                <label className="text-sm font-semibold text-slate-700">
+                  Category Name
+                </label>
+
+                <input
+                  type="text"
+                  value={categoryName}
+                  onChange={(event) => setCategoryName(event.target.value)}
+                  placeholder="Enter category name"
+                  className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="rounded-lg border border-slate-300 cursor-pointer px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={editCategory ? handleUpdateCategory : handleAddCategory}
+                className="rounded-lg bg-blue-600 px-4 py-3 cursor-pointer text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                {editCategory ? "Update" : "Create"}
+              </button>
+            </div>
+          </section>
+        )}
+
+        <section className="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <div className="hidden overflow-x-auto sm:block">
+            <table className="w-full">
+              <thead className="bg-slate-950 text-white">
+                <tr>
+                  <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                    Category
+                  </th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                    Slug
+                  </th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                    Created
+                  </th>
+                  <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-slate-100">
+                {filteredCategories.length > 0 ? (
+                  filteredCategories.map((category) => (
+                    <tr
+                      key={category.categoryUuid}
+                      className="transition hover:bg-slate-50"
+                    >
+                      <td className="px-5 py-4">
+                        <p className="font-semibold text-slate-950">
+                          {category.name}
+                        </p>
+                      </td>
+                      <td className="px-5 py-4 text-sm text-slate-500">
+                        {category.slug}
+                      </td>
+                      <td className="px-5 py-4 text-sm text-slate-500">
+                        {formatCategoryDate(category.createdAt)}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleEditCategory(category)}
+                            title="Edit category"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg cursor-pointer bg-blue-50 text-blue-700 transition hover:bg-blue-100"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDeleteCategory(category.categoryUuid)
+                            }
+                            title="Delete category"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg cursor-pointer bg-red-50 text-red-700 transition hover:bg-red-100"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="4"
+                      className="px-6 py-10 text-center text-sm text-slate-500"
+                    >
+                      {searchText
+                        ? "No categories found"
+                        : "No categories available"}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="divide-y divide-slate-100 sm:hidden">
+            {filteredCategories.length > 0 ? (
+              filteredCategories.map((category) => (
+                <article key={category.categoryUuid} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-950">
+                        {category.name}
+                      </p>
+                      <p className="mt-1 break-all text-sm text-slate-500">
+                        {category.slug}
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 gap-2 cursor-pointer">
+                      <button
+                        type="button"
+                        onClick={() => handleEditCategory(category)}
+                        title="Edit category"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700"
+                      >
+                        <Edit3 className="h-4 w-4 cursor-pointer" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDeleteCategory(category.categoryUuid)
+                        }
+                        title="Delete category"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-xs font-medium text-slate-400">
+                    Created {formatCategoryDate(category.createdAt)}
+                  </p>
+                </article>
+              ))
+            ) : (
+              <div className="px-6 py-10 text-center text-sm text-slate-500">
+                {searchText ? "No categories found" : "No categories available"}
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );

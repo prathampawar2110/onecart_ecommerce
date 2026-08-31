@@ -3,15 +3,12 @@
 const API_URL = "http://127.0.0.1:8000";
 
 import { useEffect, useState } from "react";
+import { Clock3, PackageCheck, ReceiptText, Truck } from "lucide-react";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // -------------------------------------------------------------------
-  // Fetch Orders
-  // -------------------------------------------------------------------
 
   useEffect(() => {
     async function fetchOrders() {
@@ -20,7 +17,6 @@ export default function AdminOrders() {
 
         const token = localStorage.getItem("access_token");
 
-        // No token
         if (!token) {
           setError("Please login as an admin.");
           return;
@@ -35,18 +31,15 @@ export default function AdminOrders() {
 
         const data = await response.json();
 
-        console.log("Admin Orders:", data);
-
         if (!response.ok) {
           throw new Error(
             data.detail || "You are not authorized to access admin orders.",
           );
         }
 
-        setOrders(data);
+        setOrders(Array.isArray(data) ? data : data.orders || []);
       } catch (error) {
         console.error("Failed to fetch Admin Orders:", error);
-
         setError(error.message || "Failed to fetch admin orders.");
       } finally {
         setLoading(false);
@@ -55,10 +48,6 @@ export default function AdminOrders() {
 
     fetchOrders();
   }, []);
-
-  // -------------------------------------------------------------------
-  // Update Order Status
-  // -------------------------------------------------------------------
 
   async function updateOrderStatus(orderUuid, newStatus) {
     try {
@@ -87,9 +76,6 @@ export default function AdminOrders() {
         throw new Error(data.detail || "Failed to update order status");
       }
 
-      console.log("Order Status Updated:", data);
-
-      // Update only changed order
       setOrders((previousOrders) =>
         previousOrders.map((order) =>
           order.orderUuid === orderUuid
@@ -102,42 +88,48 @@ export default function AdminOrders() {
       );
     } catch (error) {
       console.error("Failed to update order status:", error);
-
       alert(error.message);
     }
   }
 
-  // -------------------------------------------------------------------
-  // Status Classes
-  // -------------------------------------------------------------------
+  function formatCurrency(value) {
+    return `₹${Number(value || 0).toLocaleString("en-IN")}`;
+  }
+
+  function formatDate(date) {
+    if (!date) {
+      return "N/A";
+    }
+
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  // ==========================================================
+  // ⭐ NEW — SHORT ORDER ID FOR ADMIN DISPLAY
+  // ==========================================================
+  function formatOrderId(orderUuid) {
+    if (!orderUuid) {
+      return "N/A";
+    }
+
+    return `ORD-${orderUuid.slice(-5).toUpperCase()}`;
+  }
 
   function getStatusClasses(status) {
     if (status === "Processing") {
-      return `
-        bg-yellow-50
-        border-yellow-300
-        text-yellow-700
-      `;
+      return "border-amber-200 bg-amber-50 text-amber-700";
     }
 
     if (status === "Dispatched") {
-      return `
-        bg-blue-50
-        border-blue-300
-        text-blue-700
-      `;
+      return "border-sky-200 bg-sky-50 text-sky-700";
     }
 
-    return `
-      bg-green-50
-      border-green-300
-      text-green-700
-    `;
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
   }
-
-  // -------------------------------------------------------------------
-  // Status Dropdown
-  // -------------------------------------------------------------------
 
   function StatusDropdown({ order }) {
     return (
@@ -148,35 +140,19 @@ export default function AdminOrders() {
         }
         disabled={order.status === "Delivered"}
         className={`
-          w-full
-          sm:w-auto
-          min-w-35
-          px-3
-          py-2
-          rounded-lg
-          border
-          font-semibold
-          text-sm
-          shadow-sm
-          transition-all
-          duration-200
-          focus:outline-none
-          focus:ring-2
-          cursor-pointer
-
-          ${getStatusClasses(order.status)}
-
+          w-full min-w-36 rounded-lg border px-3 py-2 text-sm font-bold
+          shadow-sm outline-none transition focus:ring-4
           ${
             order.status === "Delivered"
-              ? "cursor-not-allowed"
-              : "hover:opacity-90"
+              ? "cursor-not-allowed opacity-80"
+              : "cursor-pointer hover:opacity-90"
           }
+          ${getStatusClasses(order.status)}
         `}
       >
         {order.status === "Processing" && (
           <>
             <option value="Processing">Processing</option>
-
             <option value="Dispatched">Dispatched</option>
           </>
         )}
@@ -184,7 +160,6 @@ export default function AdminOrders() {
         {order.status === "Dispatched" && (
           <>
             <option value="Dispatched">Dispatched</option>
-
             <option value="Delivered">Delivered</option>
           </>
         )}
@@ -196,175 +171,235 @@ export default function AdminOrders() {
     );
   }
 
-  // -------------------------------------------------------------------
-  // Loading
-  // -------------------------------------------------------------------
+  const processingOrders = orders.filter(
+    (order) => order.status === "Processing",
+  ).length;
+
+  const dispatchedOrders = orders.filter(
+    (order) => order.status === "Dispatched",
+  ).length;
+
+  const deliveredOrders = orders.filter(
+    (order) => order.status === "Delivered",
+  ).length;
+
+  const totalRevenue = orders.reduce(
+    (total, order) => total + Number(order.total_amount || 0),
+    0,
+  );
+
+  const summaryCards = [
+    {
+      label: "Total orders",
+      value: orders.length,
+      icon: ReceiptText,
+      className: "bg-slate-100 text-slate-700",
+    },
+    {
+      label: "Processing",
+      value: processingOrders,
+      icon: Clock3,
+      className: "bg-amber-50 text-amber-700",
+    },
+    {
+      label: "Dispatched",
+      value: dispatchedOrders,
+      icon: Truck,
+      className: "bg-sky-50 text-sky-700",
+    },
+    {
+      label: "Delivered",
+      value: deliveredOrders,
+      icon: PackageCheck,
+      className: "bg-emerald-50 text-emerald-700",
+    },
+  ];
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh] px-4">
-        <p className="text-lg sm:text-xl text-blue-500 text-center">
-          Loading Orders...
-        </p>
+      <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
+        <div className="h-8 w-40 rounded bg-slate-200 animate-pulse" />
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[...Array(4)].map((_, index) => (
+            <div
+              key={index}
+              className="h-28 rounded-lg bg-white shadow-sm animate-pulse"
+            />
+          ))}
+        </div>
       </div>
     );
   }
-
-  // -------------------------------------------------------------------
-  // Error
-  // -------------------------------------------------------------------
 
   if (error) {
     return (
-      <div className="min-h-[60vh] bg-gray-100 p-4 sm:p-6 lg:p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-xl shadow-md p-6 sm:p-8 text-center">
-            <h1 className="text-2xl sm:text-3xl font-bold text-red-600 mb-3">
-              Access Denied
-            </h1>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
+          <h1 className="text-2xl font-bold text-red-700">Access Denied</h1>
 
-            <p className="text-gray-600">{error}</p>
-          </div>
+          <p className="mt-2 text-sm text-slate-500">{error}</p>
         </div>
       </div>
     );
   }
 
-  // -------------------------------------------------------------------
-  // Main UI
-  // -------------------------------------------------------------------
-
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
-      {/* ============================================================= */}
-      {/* Header & Orders */}
-      {/* ============================================================= */}
-      <div className="flex items-center justify-between">
-   
-        <div className="mb-6 sm:mb-8 sm:mt-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-black">Orders</h1>
-
-          <p className="text-gray-700 mt-1 text-sm sm:text-base">
-            Manage OneCart customer orders
+    <div className="min-h-screen bg-slate-50 px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="border-b border-slate-200 pb-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            Fulfillment
           </p>
-        </div>
 
-        <div className="w-full sm:w-auto inline-block bg-white rounded-xl shadow-md
-          px-2 sm:px-4 py-1 border-l-4 border-blue-500 mb-4">
-          <p className="text-sm text-gray-500">Total Orders</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-800">{orders.length}</p>
-        </div>
-      </div>
+          <h1 className="mt-2 text-2xl font-bold text-slate-950 sm:text-3xl">
+            Orders
+          </h1>
 
-      {/* ============================================================= */}
-      {/* No Orders */}
-      {/* ============================================================= */}
+          <p className="mt-1 text-sm text-slate-500 sm:text-base">
+            Review, process, dispatch, and close customer orders.
+          </p>
+        </header>
 
-      {orders.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-md p-8 text-center">
-          <p className="text-gray-600 text-lg">No orders found.</p>
-        </div>
-      ) : (
-        <>
-          {/* ========================================================= */}
-          {/* DESKTOP TABLE */}
-          {/* ========================================================= */}
+        <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {summaryCards.map((card) => {
+            const Icon = card.icon;
 
-          <div className="hidden lg:block bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-900 text-white">
+            return (
+              <article
+                key={card.label}
+                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">
+                      {card.label}
+                    </p>
+
+                    <p className="mt-2 text-2xl font-bold text-slate-950">
+                      {card.value}
+                    </p>
+                  </div>
+
+                  <span
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${card.className}`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </span>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+
+        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950">
+                Order Queue
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Total booked value: {formatCurrency(totalRevenue)}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {orders.length === 0 ? (
+          <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
+            <p className="text-sm font-medium text-slate-600">
+              No orders found.
+            </p>
+          </div>
+        ) : (
+          <section className="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full min-w-248">
+                <thead className="bg-slate-950 text-white">
                   <tr>
-                    <th className="text-left px-5 py-4">Order ID</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Order ID
+                    </th>
 
-                    <th className="text-left px-5 py-4">Customer</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Customer
+                    </th>
 
-                    <th className="text-left px-5 py-4">Product Name</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Products
+                    </th>
 
-                    <th className="text-left px-5 py-4">Total</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Total
+                    </th>
 
-                    <th className="text-left px-5 py-4">Status</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Status
+                    </th>
 
-                    <th className="text-left px-5 py-4">Order Date</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Date
+                    </th>
 
-                    <th className="text-left px-5 py-4">Action</th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide">
+                      Update
+                    </th>
                   </tr>
                 </thead>
 
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {orders.map((order, index) => (
                     <tr
                       key={order.orderUuid || `order-${index}`}
-                      className="
-                        border-b
-                        border-gray-200
-                        hover:bg-gray-50
-                      "
+                      className="transition hover:bg-slate-50"
                     >
-                      {/* Order UUID */}
-
                       <td className="px-5 py-4">
-                        <span className="text-xs font-semibold text-black break-all">
-                          {order.orderUuid}
-                        </span>
+                        {/* ⭐ CHANGED — show short order ID */}
+                        <p className="text-sm font-semibold text-slate-950">
+                          {formatOrderId(order.orderUuid)}
+                        </p>
                       </td>
 
-                      {/* User Name */}
-
-                      <td className="px-5 py-4">
-                        <span className="text-xs font-semibold text-black break-all">
-                          {order.userName}
-                        </span>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-700">
+                        {order.userName || "Unknown User"}
                       </td>
 
-                      {/* Products */}
-
-                      <td className="px-5 py-4 text-black">
-                        <div className="space-y-1">
+                      <td className="px-5 py-4">
+                        <div className="max-w-[18rem] space-y-1">
                           {order.items?.map((item, itemIndex) => (
-                            <div
+                            <p
                               key={item.productUuid || itemIndex}
-                              className="text-sm"
+                              className="truncate text-sm text-slate-500"
                             >
                               {item.productName || item.name || "Product"}
-                            </div>
+
+                              <span className="text-slate-400">
+                                {" "}
+                                x {item.quantity}
+                              </span>
+                            </p>
                           ))}
                         </div>
                       </td>
 
-                      {/* Total */}
-
-                      <td className="px-5 py-4 text-black font-semibold">
-                        ₹{order.total_amount}
+                      <td className="px-5 py-4 text-sm font-bold text-slate-950">
+                        {formatCurrency(order.total_amount)}
                       </td>
-
-                      {/* Status */}
 
                       <td className="px-5 py-4">
                         <span
-                          className={`
-                            inline-flex
-                            px-3
-                            py-1
-                            rounded-full
-                            text-sm
-                            font-semibold
-                            border
-
-                            ${getStatusClasses(order.status)}
-                          `}
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClasses(
+                            order.status,
+                          )}`}
                         >
                           {order.status}
                         </span>
                       </td>
 
-                      {/* Date */}
-
-                      <td className="px-5 py-4 text-black whitespace-nowrap">
-                        {new Date(order.created_at).toLocaleDateString()}
+                      <td className="px-5 py-4 text-sm text-slate-500">
+                        {formatDate(order.created_at)}
                       </td>
-
-                      {/* Action */}
 
                       <td className="px-5 py-4">
                         <StatusDropdown order={order} />
@@ -374,153 +409,104 @@ export default function AdminOrders() {
                 </tbody>
               </table>
             </div>
-          </div>
 
-          {/* ========================================================= */}
-          {/* MOBILE + TABLET CARDS */}
-          {/* ========================================================= */}
-
-          <div className="lg:hidden space-y-4">
-            {orders.map((order, index) => (
-              <div
-                key={order.orderUuid || `order-${index}`}
-                className="
-                  bg-white
-                  rounded-xl
-                  shadow-md
-                  border
-                  border-gray-200
-                  p-4
-                  sm:p-5
-                "
-              >
-                {/* --------------------------------------------------- */}
-                {/* Order Header */}
-                {/* --------------------------------------------------- */}
-
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">Order ID</p>
-
-                    <p className="text-sm font-semibold text-gray-800 break-all">
-                      {order.orderUuid}
-                    </p>
-                  </div>
-
-                  <span
-                    className={`
-                      self-start
-                      inline-flex
-                      px-3
-                      py-1
-                      rounded-full
-                      text-xs
-                      sm:text-sm
-                      font-semibold
-                      border
-
-                      ${getStatusClasses(order.status)}
-                    `}
-                  >
-                    {order.status}
-                  </span>
-                </div>
-
-                {/* --------------------------------------------------- */}
-                {/* User UUID */}
-                {/* --------------------------------------------------- */}
-
-                <div className="mt-4">
-                  <p className="text-xs text-gray-500 mb-1">Customer</p>
-
-                  <p className="text-sm text-gray-800 break-all">
-                    {order.userName || "Unknown User"}
-                  </p>
-                </div>
-
-                {/* --------------------------------------------------- */}
-                {/* Products */}
-                {/* --------------------------------------------------- */}
-
-                <div className="mt-4">
-                  <p className="text-xs text-gray-500 mb-2">Products</p>
-
-                  <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                    {order.items?.map((item, itemIndex) => (
-                      <div
-                        key={item.productUuid || itemIndex}
-                        className="
-                            flex
-                            justify-between
-                            items-start
-                            gap-3
-                            text-sm
-                          "
-                      >
-                        <span className="text-gray-800">
-                          {item.productName || item.name || "Product"}
-
-                          <span className="text-gray-500">
-                            {" × "}
-                            {item.quantity}
-                          </span>
-                        </span>
-
-                        <span className="font-semibold text-gray-800 whitespace-nowrap">
-                          ₹{item.price * item.quantity}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* --------------------------------------------------- */}
-                {/* Total + Date */}
-                {/* --------------------------------------------------- */}
-
-                <div
-                  className="
-                    mt-4
-                    pt-4
-                    border-t
-                    border-gray-200
-                    flex
-                    justify-between
-                    items-center
-                    gap-4
-                  "
+            <div className="divide-y divide-slate-100 lg:hidden">
+              {orders.map((order, index) => (
+                <article
+                  key={order.orderUuid || `mobile-order-${index}`}
+                  className="p-4 sm:p-5"
                 >
-                  <div>
-                    <p className="text-xs text-gray-500">Date</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Order
+                      </p>
 
-                    <p className="text-sm font-medium text-gray-800">
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </p>
+                      {/* ⭐ CHANGED — show short order ID */}
+                      <p className="mt-1 text-sm font-bold text-slate-950">
+                        {formatOrderId(order.orderUuid)}
+                      </p>
+                    </div>
+
+                    <span
+                      className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClasses(
+                        order.status,
+                      )}`}
+                    >
+                      {order.status}
+                    </span>
                   </div>
 
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">Total</p>
-
-                    <p className="text-lg font-bold text-blue-600">
-                      ₹{order.total_amount}
+                  <div className="mt-4 rounded-lg bg-slate-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Products
                     </p>
+
+                    <div className="mt-2 space-y-2">
+                      {order.items?.map((item, itemIndex) => (
+                        <div
+                          key={item.productUuid || itemIndex}
+                          className="flex justify-between gap-3 text-sm"
+                        >
+                          <span className="text-slate-700">
+                            {item.productName || item.name || "Product"}
+
+                            <span className="text-slate-400">
+                              {" "}
+                              x {item.quantity}
+                            </span>
+                          </span>
+
+                          <span className="font-semibold text-slate-950">
+                            {formatCurrency(
+                              Number(item.price || 0) *
+                                Number(item.quantity || 0),
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                {/* --------------------------------------------------- */}
-                {/* Action */}
-                {/* --------------------------------------------------- */}
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-400">Customer</p>
 
-                <div className="mt-4">
-                  <p className="text-xs text-gray-500 mb-2">Update Status</p>
+                      <p className="mt-1 text-sm font-medium text-slate-700">
+                        {order.userName || "Unknown User"}
+                      </p>
+                    </div>
 
-                  <StatusDropdown order={order} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+                    <div>
+                      <p className="text-xs text-slate-400">Total</p>
+
+                      <p className="mt-1 text-sm font-bold text-slate-950">
+                        {formatCurrency(order.total_amount)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">Date</p>
+
+                      <p className="mt-1 text-sm text-slate-700">
+                        {formatDate(order.created_at)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">Update</p>
+
+                      <div className="mt-1">
+                        <StatusDropdown order={order} />
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,472 +1,148 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 import {
   LayoutDashboard,
-  Package,
-  Users,
-  ShoppingCart,
   LogOut,
+  Package,
+  ShoppingCart,
   SquarePlus,
+  Users,
 } from "lucide-react";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-
-// =====================================================================================
 
 export default function AdminSidebar() {
   const router = useRouter();
+  const pathname = usePathname();
 
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
 
-  // =====================================================================================
-  // LOGOUT
-  // =====================================================================================
+  const navItems = [
+    {
+      label: "Dashboard",
+      href: "/admin",
+      icon: LayoutDashboard,
+    },
+    {
+      label: "Categories",
+      href: "/admin/categories",
+      icon: SquarePlus,
+    },
+    {
+      label: "Products",
+      href: "/admin/products",
+      icon: Package,
+    },
+    {
+      label: "Orders",
+      href: "/admin/orders",
+      icon: ShoppingCart,
+    },
+    {
+      label: "Users",
+      href: "/admin/users",
+      icon: Users,
+    },
+  ];
 
   function handleLogout() {
     localStorage.removeItem("access_token");
     setShowLogoutPopup(false);
-    router.push("/login");
+    router.replace("/login");
   }
-
-  // =====================================================================================
-  // SIDEBAR
-  // =====================================================================================
 
   return (
     <>
-      <aside
-        className="
-          fixed
-          left-0
-          top-0
-          bottom-0
-          z-40
+      <aside className="fixed left-0 top-0 bottom-0 z-40 flex w-16 flex-col overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white shadow-sm sm:w-60">
+        <div className="shrink-0 border-b border-slate-200 p-3 sm:p-5">
+          <div className="flex items-center justify-center gap-3 sm:justify-start">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-950 text-sm font-bold text-white">
+              OC
+            </div>
 
-          w-16
-          sm:w-60
+            <div className="hidden min-w-0 sm:block">
+              <h1 className="truncate text-lg font-bold text-slate-950">
+                OneCart
+              </h1>
 
-          bg-white
-          text-black
-          shadow-lg
-
-          flex
-          flex-col
-
-          overflow-y-auto
-          overflow-x-hidden
-        "
-      >
-        {/* ============================================================= */}
-        {/* LOGO */}
-        {/* ============================================================= */}
-
-        <div
-          className="
-            p-2
-            sm:p-4
-
-            border-2
-            border-gray-200
-
-            shrink-0
-          "
-        >
-          <h1
-            className="
-              text-base
-              sm:text-xl
-
-              font-bold
-
-              text-center
-              sm:text-left
-            "
-          >
-            OneCart
-          </h1>
-
-          <p
-            className="
-              hidden
-              sm:block
-
-              text-sm
-              text-gray-600
-
-              mt-1
-            "
-          >
-            Admin Panel
-          </p>
+              <p className="text-xs font-medium text-slate-500">
+                Admin Panel
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* ============================================================= */}
-        {/* NAVIGATION */}
-        {/* ============================================================= */}
+        <nav className="flex-1 space-y-1 p-2 sm:p-3">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              item.href === "/admin"
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
 
-        <nav
-          className="
-            flex-1
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                className={`
+                  flex items-center justify-center gap-3 rounded-lg px-3 py-3
+                  text-sm font-semibold transition sm:justify-start
+                  ${
+                    isActive
+                      ? "bg-slate-950 text-white shadow-sm"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                  }
+                `}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
 
-            p-2
-            sm:p-4
-
-            space-y-2
-
-            bg-blue-100
-          "
-        >
-          {/* ========================================================= */}
-          {/* DASHBOARD */}
-          {/* ========================================================= */}
-
-          <Link
-            href="/admin"
-            title="Dashboard"
-            className="
-              flex
-              items-center
-
-              justify-center
-              sm:justify-start
-
-              gap-3
-
-              px-2
-              sm:px-4
-
-              py-3
-
-              rounded-lg
-
-              hover:bg-yellow-300
-
-              transition
-
-              text-black
-
-              whitespace-nowrap
-            "
-          >
-            <LayoutDashboard className="w-5 h-5 shrink-0" />
-
-            <span className="hidden sm:inline">
-              Dashboard
-            </span>
-          </Link>
-
-          {/* ========================================================= */}
-          {/* CATEGORIES */}
-          {/* ========================================================= */}
-
-          <Link
-            href="/admin/categories"
-            title="Categories"
-            className="
-              flex
-              items-center
-
-              justify-center
-              sm:justify-start
-
-              gap-3
-
-              px-2
-              sm:px-4
-
-              py-3
-
-              rounded-lg
-
-              hover:bg-yellow-300
-
-              transition
-
-              text-black
-
-              whitespace-nowrap
-            "
-          >
-            <SquarePlus className="w-5 h-5 shrink-0" />
-
-            <span className="hidden sm:inline">
-              Categories
-            </span>
-          </Link>
-
-          {/* ========================================================= */}
-          {/* PRODUCTS */}
-          {/* ========================================================= */}
-
-          <Link
-            href="/admin/products"
-            title="Products"
-            className="
-              flex
-              items-center
-
-              justify-center
-              sm:justify-start
-
-              gap-3
-
-              px-2
-              sm:px-4
-
-              py-3
-
-              rounded-lg
-
-              hover:bg-yellow-300
-
-              transition
-
-              text-black
-
-              whitespace-nowrap
-            "
-          >
-            <Package className="w-5 h-5 shrink-0" />
-
-            <span className="hidden sm:inline">
-              Products
-            </span>
-          </Link>
-
-          {/* ========================================================= */}
-          {/* ORDERS */}
-          {/* ========================================================= */}
-
-          <Link
-            href="/admin/orders"
-            title="Orders"
-            className="
-              flex
-              items-center
-
-              justify-center
-              sm:justify-start
-
-              gap-3
-
-              px-2
-              sm:px-4
-
-              py-3
-
-              rounded-lg
-
-              hover:bg-yellow-300
-
-              transition
-
-              text-black
-
-              whitespace-nowrap
-            "
-          >
-            <ShoppingCart className="w-5 h-5 shrink-0" />
-
-            <span className="hidden sm:inline">
-              Orders
-            </span>
-          </Link>
-
-          {/* ========================================================= */}
-          {/* USERS */}
-          {/* ========================================================= */}
-
-          <Link
-            href="/admin/users"
-            title="Users"
-            className="
-              flex
-              items-center
-
-              justify-center
-              sm:justify-start
-
-              gap-3
-
-              px-2
-              sm:px-4
-
-              py-3
-
-              rounded-lg
-
-              hover:bg-yellow-300
-
-              transition
-
-              text-black
-
-              whitespace-nowrap
-            "
-          >
-            <Users className="w-5 h-5 shrink-0" />
-
-            <span className="hidden sm:inline">
-              Users
-            </span>
-          </Link>
+                <span className="hidden truncate sm:inline">
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* ============================================================= */}
-        {/* LOGOUT */}
-        {/* ============================================================= */}
-
-        <div
-          className="
-            p-2
-            sm:p-4
-
-            border-t
-            border-gray-200
-
-            shrink-0
-          "
-        >
+        <div className="shrink-0 border-t border-slate-200 p-2 sm:p-3">
           <button
+            type="button"
             onClick={() => setShowLogoutPopup(true)}
             title="Logout"
-            className="
-              w-full
-
-              flex
-              items-center
-
-              justify-center
-              sm:justify-start
-
-              gap-3
-
-              px-2
-              sm:px-4
-
-              py-3
-
-              rounded-lg
-
-              border-2
-              border-red-500
-
-              text-black
-
-              hover:bg-red-600
-              hover:text-white
-
-              transition
-
-              cursor-pointer
-
-              whitespace-nowrap
-            "
+            className="flex cursor-pointer w-full items-center justify-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-slate-600 transition hover:bg-red-50 hover:text-red-700 sm:justify-start"
           >
-            <LogOut className="w-5 h-5 shrink-0" />
+            <LogOut className="h-5 w-5 shrink-0" />
 
-            <span className="hidden sm:inline">
-              Logout
-            </span>
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </aside>
 
-      {/* =============================================================== */}
-      {/* LOGOUT POPUP */}
-      {/* =============================================================== */}
-
       {showLogoutPopup && (
-        <div
-          className="
-            fixed
-            inset-0
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/50 px-4">
+          <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-slate-950">Logout</h2>
 
-            z-100
-
-            flex
-            items-center
-            justify-center
-
-            bg-black/50
-
-            px-4
-          "
-        >
-          <div
-            className="
-              w-full
-              max-w-sm
-
-              bg-white
-
-              rounded-xl
-
-              shadow-2xl
-
-              p-6
-            "
-          >
-            <h2 className="text-xl font-bold text-gray-800">
-              Logout
-            </h2>
-
-            <p className="mt-2 text-gray-600">
-              Are you sure you want to logout?
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Are you sure you want to logout from the admin panel?
             </p>
 
-            <div className="flex gap-3 mt-6">
-              {/* Cancel */}
-
+            <div className="mt-6 flex gap-3">
               <button
+                type="button"
                 onClick={() => setShowLogoutPopup(false)}
-                className="
-                  flex-1
-
-                  px-4
-                  py-2.5
-
-                  rounded-lg
-
-                  border
-                  border-gray-300
-
-                  text-gray-700
-
-                  hover:bg-gray-100
-
-                  transition
-
-                  cursor-pointer
-                "
+                className="flex-1 cursor-pointer rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Cancel
               </button>
 
-              {/* Confirm Logout */}
-
               <button
+                type="button"
                 onClick={handleLogout}
-                className="
-                  flex-1
-
-                  px-4
-                  py-2.5
-
-                  rounded-lg
-
-                  bg-red-500
-                  text-white
-
-                  hover:bg-red-600
-
-                  transition
-
-                  cursor-pointer
-                "
+                className="flex-1 cursor-pointer rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
               >
                 Logout
               </button>
@@ -477,425 +153,3 @@ export default function AdminSidebar() {
     </>
   );
 }
-
-
-// "use client";
-
-// import Link from "next/link";
-// import {
-//   LayoutDashboard, Package, Users, ShoppingCart, LogOut,
-//   SquarePlus, } from "lucide-react";
-
-// import { useState } from "react";
-// import { useRouter } from "next/navigation";
-
-// // =====================================================================================
-
-// export default function AdminSidebar() {
-//   const router = useRouter();
-
-//   // Logout confirmation popup
-//     const [showLogoutPopup, setShowLogoutPopup] = useState(false);
-
-    
-//   // LOGOUT
-  
-//   function handleLogout() {
-//     localStorage.removeItem("access_token");
-
-//     setShowLogoutPopup(false);
-
-//     // setShowProfileMenu(false);
-
-//     // setIsLoggedIn(false);
-
-//     router.push("/login");
-//   }
-
-//   // =====================================================================================
-
-//   return (
-//     <aside
-//       className="
-//         fixed
-//         left-0
-        
-        
-//         z-50
-//         h-[calc(100vh-56px)]
-//         sm:h-[calc(100vh-64px)]
-
-//         w-20
-//         sm:w-60
-
-//         bg-white
-//         text-black
-//         shadow-lg
-
-//         flex
-//         flex-col
-
-//         overflow-y-auto
-//       "
-//     >
-//       {/* ================================================================ */}
-//       {/* LOGO */}
-//       {/* ================================================================ */}
-
-//       <div
-//         className="
-//           p-3
-//           sm:p-3
-//           border-b
-//           border-gray-200
-//           shrink-0
-//         "
-//       >
-//         <h1
-//           className="
-//             text-lg
-//             sm:text-2xl
-//             font-bold
-//             text-center
-//             sm:text-left
-//           "
-//         >
-//           OneCart
-//         </h1>
-
-//         <p
-//           className="
-//             hidden
-//             sm:block
-//             text-sm
-//             text-black
-//             mt-1
-//           "
-//         >
-//           Admin Panel
-//         </p>
-//       </div>
-
-//       {/* ================================================================ */}
-//       {/* NAVIGATION */}
-//       {/* ================================================================ */}
-
-//       <nav
-//         className="
-//           flex-1
-//           p-2
-//           sm:p-4
-//           space-y-2
-//           bg-blue-100
-//         "
-//       >
-//         {/* Dashboard */}
-
-//         <Link
-//           href="/admin"
-//           title="Dashboard"
-//           className="
-//             flex
-//             items-center
-//             justify-center
-//             sm:justify-start
-//             gap-3
-
-//             px-3
-//             sm:px-4
-
-//             py-3
-
-//             rounded-lg
-
-//             hover:bg-yellow-300
-//             transition
-
-//             text-black
-//           "
-//         >
-//           <LayoutDashboard className="w-5 h-5 shrink-0" />
-
-//           <span className="hidden sm:inline">Dashboard</span>
-//         </Link>
-
-//         {/* Categories */}
-
-//         <Link
-//           href="/admin/categories"
-//           title="Categories"
-//           className="
-//             flex
-//             items-center
-//             justify-center
-//             sm:justify-start
-//             gap-3
-
-//             px-3
-//             sm:px-4
-
-//             py-3
-
-//             rounded-lg
-
-//             hover:bg-yellow-300
-//             transition
-
-//             text-black
-//           "
-//         >
-//           <SquarePlus className="w-5 h-5 shrink-0" />
-
-//           <span className="hidden sm:inline">Categories</span>
-//         </Link>
-
-//         {/* Products */}
-
-//         <Link
-//           href="/admin/products"
-//           title="Products"
-//           className="
-//             flex
-//             items-center
-//             justify-center
-//             sm:justify-start
-//             gap-3
-
-//             px-3
-//             sm:px-4
-
-//             py-3
-
-//             rounded-lg
-
-//             hover:bg-yellow-300
-//             transition
-
-//             text-black
-//           "
-//         >
-//           <Package className="w-5 h-5 shrink-0" />
-
-//           <span className="hidden sm:inline">Products</span>
-//         </Link>
-
-//         {/* Orders */}
-
-//         <Link
-//           href="/admin/orders"
-//           title="Orders"
-//           className="
-//             flex
-//             items-center
-//             justify-center
-//             sm:justify-start
-//             gap-3
-
-//             px-3
-//             sm:px-4
-
-//             py-3
-
-//             rounded-lg
-
-//             hover:bg-yellow-300
-//             transition
-
-//             text-black
-//           "
-//         >
-//           <ShoppingCart className="w-5 h-5 shrink-0" />
-
-//           <span className="hidden sm:inline">Orders</span>
-//         </Link>
-
-//         {/* Users */}
-
-//         <Link
-//           href="/admin/users"
-//           title="Users"
-//           className="
-//             flex
-//             items-center
-//             justify-center
-//             sm:justify-start
-//             gap-3
-
-//             px-3
-//             sm:px-4
-
-//             py-3
-
-//             rounded-lg
-
-//             hover:bg-yellow-300
-//             transition
-
-//             text-black
-//           "
-//         >
-//           <Users className="w-5 h-5 shrink-0" />
-
-//           <span className="hidden sm:inline">Users</span>
-//         </Link>
-//       </nav>
-
-//       {/* ================================================================ */}
-//       {/* LOGOUT */}
-//       {/* ================================================================ */}
-
-//       <div
-//         className="
-//           p-2
-//           sm:p-4
-//           border-t
-//           border-gray-200
-//           shrink-0
-//         "
-//       >
-//         <button
-//           onClick={ ()=> setShowLogoutPopup(true) }
-//           title="Logout"
-//           className="
-//             w-full
-
-//             flex
-//             items-center
-//             justify-center
-//             sm:justify-start
-//             gap-3
-
-//             px-3
-//             sm:px-4
-
-//             py-3
-
-//             rounded-lg
-
-//             border-2
-//             border-red-500
-//             text-black
-
-//             hover:bg-red-600
-//             hover:text-white
-
-//             transition
-//             cursor-pointer
-//           "
-//         >
-//           <LogOut className="w-5 h-5 shrink-0" />
-
-//           <span className="hidden sm:inline">LogOut</span>
-//         </button>
-
-//       </div>
-
-      
-
-//       {showLogoutPopup && (
-//         <div
-//           className="
-//             fixed
-//             inset-0
-
-//             z-100
-
-//             flex
-//             items-center
-//             justify-center
-
-//             bg-black/50
-
-//             px-4
-//           "
-//         >
-//           <div
-//             className="
-//               w-full
-//               max-w-sm
-
-//               bg-white
-
-//               rounded-xl
-
-//               shadow-2xl
-
-//               p-6
-//             "
-//           >
-//             {/* Title */}
-
-//             <h2 className="text-xl font-bold text-gray-800">
-//               Logout
-//             </h2>
-
-//             {/* Message */}
-
-//             <p className="mt-2 text-gray-600">
-//               Are you sure you want to logout?
-//             </p>
-
-//             {/* Buttons */}
-
-//             <div className="flex gap-3 mt-6">
-//               {/* Cancel */}
-
-//               <button
-//                 onClick={() => setShowLogoutPopup(false)}
-//                 className="
-//                   flex-1
-
-//                   px-4
-//                   py-2.5
-
-//                   rounded-lg
-
-//                   border
-//                   border-gray-300
-
-//                   text-gray-700
-
-//                   hover:bg-gray-100
-
-//                   transition
-
-//                   cursor-pointer
-//                 "
-//               >
-//                 Cancel
-//               </button>
-
-//               {/* Confirm Logout */}
-
-//               <button
-//                 onClick={handleLogout}
-//                 className="
-//                   flex-1
-
-//                   px-4
-//                   py-2.5
-
-//                   rounded-lg
-
-//                   bg-red-500
-
-//                   text-white
-
-//                   hover:bg-red-600
-
-//                   transition
-
-//                   cursor-pointer
-//                 "
-//               >
-//                 Logout
-//               </button>
-              
-//             </div>
-//           </div>
-//         </div>
-//       )}
-
-//     </aside>
-//   );
-// }

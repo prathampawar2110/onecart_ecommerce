@@ -13,6 +13,10 @@ class Product(BaseModel):
 
     image_url: str
 
+    images: List[str] = Field(
+        default_factory=list
+    )
+
     category: str
 
     stock: int

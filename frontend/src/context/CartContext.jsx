@@ -45,6 +45,17 @@ export function CartProvider({ children }) {
   // ⭐ CHANGED — Load backend cart when user opens the application
   useEffect(() => {
     loadCart();
+
+    // listen for login/logout
+    function handleAuthChange() {
+      loadCart();
+    }
+
+    window.addEventListener("auth-change" , handleAuthChange);
+
+    return() => {
+      window.removeEventListener("auth-change" , handleAuthChange);
+    };
   }, []);
 
   // --------------------------------------------------
@@ -53,6 +64,12 @@ export function CartProvider({ children }) {
 
   function clearCart() {
     setCartItems([]);
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("access_token");
+    clearCart();
+    window.dispatchEvent(new Event("auth-change"));
   }
 
   // --------------------------------------------------
@@ -163,6 +180,7 @@ export function CartProvider({ children }) {
         removeSelectedItems,
         updateQuantity,
         clearCart,
+        handleLogout,
 
         loading, // ⭐ CHANGED
       }}

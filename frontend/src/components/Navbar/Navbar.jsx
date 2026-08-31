@@ -68,26 +68,36 @@ export default function Navbar() {
   // CHECK LOGIN
   // ==========================================================
 
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
+  // ==========================================================
+// CHECK LOGIN
+// ==========================================================
 
+useEffect(() => {
+  function checkAuth() {
+    const token = localStorage.getItem("access_token");
     setIsLoggedIn(!!token);
-  }, []);
+  }
+
+  // Check login status when Navbar loads
+  checkAuth();
+
+  // Listen for login/logout changes
+  window.addEventListener("auth-change", checkAuth);
+
+  return () => {
+    window.removeEventListener("auth-change", checkAuth);
+  };
+}, []);
 
   // ==========================================================
   // LIVE SEARCH
   // ==========================================================
 
   useEffect(() => {
-    if (!searchText || searchText.trim() === "") {
-      setSearchResults([]);
-      setShowResults(false);
-      setSelectedIndex(-1);
+    if (!searchText.trim()) {
       return;
     }
 
-    // If user selected a result,
-    // don't perform another search
     if (selectingResult.current) {
       selectingResult.current = false;
       return;
@@ -98,13 +108,8 @@ export default function Navbar() {
         const results = await searchProducts(searchText.trim());
 
         setSearchResults(results);
-
-        // Show results while typing
         setShowResults(true);
-
-        // Reset keyboard selection
         setSelectedIndex(-1);
-
       } catch (error) {
         console.error("Live search error:", error);
 
@@ -116,6 +121,44 @@ export default function Navbar() {
 
     return () => clearTimeout(timer);
   }, [searchText]);
+    
+  //   if (!searchText || searchText.trim() === "") {
+  //     setSearchResults([]);
+  //     setShowResults(false);
+  //     setSelectedIndex(-1);
+  //     return;
+  //   }
+
+  //   // If user selected a result,
+  //   // don't perform another search
+  //   if (selectingResult.current) {
+  //     selectingResult.current = false;
+  //     return;
+  //   }
+
+  //   const timer = setTimeout(async () => {
+  //     try {
+  //       const results = await searchProducts(searchText.trim());
+
+  //       setSearchResults(results);
+
+  //       // Show results while typing
+  //       setShowResults(true);
+
+  //       // Reset keyboard selection
+  //       setSelectedIndex(-1);
+
+  //     } catch (error) {
+  //       console.error("Live search error:", error);
+
+  //       setSearchResults([]);
+  //       setShowResults(false);
+  //       setSelectedIndex(-1);
+  //     }
+  //   }, 300);
+
+  //   return () => clearTimeout(timer);
+  // }, [searchText]);
 
   // ==========================================================
   // SEARCH SUBMIT
@@ -183,7 +226,7 @@ export default function Navbar() {
       router.push(`/products/${product.productUuid}`);
 
       setShowResults(false);
-      setSearchText(product.name || "");
+      // setSearchText(product.name || "");
       setSelectedIndex(-1);
     }
   }
@@ -259,6 +302,9 @@ export default function Navbar() {
 
   function handleLogout() {
     localStorage.removeItem("access_token");
+
+    // Notify CartContext and WishlistContext
+    window.dispatchEvent(new Event("auth-change"));
 
     setShowLogoutPopup(false);
 
@@ -413,9 +459,19 @@ export default function Navbar() {
               type="text"
               placeholder="Search for products..."
               value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
-              onKeyDown={handleSearchKeyDown}
+              onChange={(event) => {
+                const value = event.target.value;
 
+                setSearchText(value);
+
+                if (!value.trim()) {
+                  setSearchResults([]);
+                  setShowResults(false);
+                  setSelectedIndex(-1);
+                }
+              }}
+
+              onKeyDown={handleSearchKeyDown}
               aria-label="Search products"
               role="combobox"
               aria-expanded={showResults}

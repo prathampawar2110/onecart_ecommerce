@@ -1,182 +1,66 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
+
 from models.user_model import User, UserLogin
-from models.profile_model import (ProfileUpdate, AddressUpdate, AddressCreate)
-from database.connection import user_collection
-from utils.security import (
-    hash_password,
-    verify_password,
-    create_access_token
+from models.profile_model import (
+    ProfileUpdate,
+    AddressUpdate,
+    AddressCreate
 )
+
 from utils.auth import get_current_user
 from utils.permissions import require_admin
-from datetime import datetime,timezone
 
-from bson import ObjectId
+from services.user_service import (
+    register_user_service,
+    login_user_service,
+    get_current_user_service,
+    update_profile_service,
+    get_addresses_service,
+    add_address_service,
+    update_address_service,
+    delete_address_service,
+    get_all_users_service
+)
 
-import uuid
-
-# ----------------------------------------------------------------------------------------------------------
-# Router
-# ----------------------------------------------------------------------------------------------------------
 
 router = APIRouter()
 
 
-# ----------------------------------------------------------------------------------------------------------
-# Register User
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# REGISTER
+# ============================================================
 
 @router.post("/users/register")
 def register_user(us: User):
 
-    existing_user = user_collection.find_one(
-        {
-            "email": us.email
-        }
-    )
-
-    if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="Email Already Registered"
-        )
-
-    hashed_password = hash_password(
-        us.password
-    )
-
-    user_data = {
-        "userUuid": us.userUuid,
-        "name": us.name,
-        "email": us.email,
-        "password": hashed_password,
-        "role": "customer",
-        "phone": us.phone,
-        "createdAt":datetime.now(timezone.utc),
-
-        # Multiple addresses
-        "addresses": [
-            address.model_dump()
-            for address in us.addresses
-        ]
-    }
-
-    user_collection.insert_one(user_data)
-
-    return {
-        "message": "user registered successfully",
-        "userUuid": us.userUuid
-    }
+    return register_user_service(us)
 
 
-# ----------------------------------------------------------------------------------------------------------
-# Login API
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# LOGIN
+# ============================================================
 
 @router.post("/users/login")
 def login_user(use_variable: UserLogin):
 
-    existing_user = user_collection.find_one(
-        {
-            "email": use_variable.email
-        }
-    )
-
-    if not existing_user:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password"
-        )
-
-    if not verify_password(
-        use_variable.password,
-        existing_user["password"]
-    ):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid email or password"
-        )
-
-    access_token = create_access_token(
-        {
-            "sub": existing_user["email"],
-            "userUuid": existing_user["userUuid"]
-        }
-    )
-
-    return {
-        "message": "Login Successful",
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return login_user_service(use_variable)
 
 
-# ----------------------------------------------------------------------------------------------------------
-# Get Current Logged-in User
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# CURRENT USER
+# ============================================================
 
 @router.get("/users/me")
 def get_current_user_info(
     user: dict = Depends(get_current_user)
 ):
 
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User Not Found"
-        )
-
-    # ----------------------------------------------------------
-    # Migrate old single address if it exists
-    # ----------------------------------------------------------
-
-    addresses = user.get("addresses", [])
-
-    old_address = user.get("address")
-
-    if not addresses and old_address:
-
-        migrated_address = {
-            "addressUuid": str(uuid.uuid4()),
-            "label": "Home",
-            "street": old_address.get("street", ""),
-            "city": old_address.get("city", ""),
-            "state": old_address.get("state", ""),
-            "pincode": old_address.get("pincode", "")
-        }
-
-        addresses = [migrated_address]
-
-        # Save migrated address
-        user_collection.update_one(
-            {
-                "_id": ObjectId(user["_id"])
-            },
-            {
-                "$set": {
-                    "addresses": addresses
-                },
-                "$unset": {
-                    "address": ""
-                }
-            }
-        )
-
-    return {
-        "userUuid": user["userUuid"],
-        "name": user["name"],
-        "email": user["email"],
-        "role": user["role"],
-
-        "phone": user.get("phone"),
-
-        "addresses": addresses
-    }
+    return get_current_user_service(user)
 
 
-# ----------------------------------------------------------------------------------------------------------
-# Update Profile - Phone Only
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# UPDATE PROFILE
+# ============================================================
 
 @router.put("/users/me")
 def update_profile(
@@ -184,97 +68,27 @@ def update_profile(
     user: dict = Depends(get_current_user)
 ):
 
-    result = user_collection.update_one(
-        {
-            "_id": ObjectId(user["_id"])
-        },
-        {
-            "$set": {
-                "phone": profile_data.phone
-            }
-        }
+    return update_profile_service(
+        profile_data,
+        user
     )
 
-    if result.matched_count == 0:
-        raise HTTPException(
-            status_code=404,
-            detail="User Not Found"
-        )
 
-    updated_user = user_collection.find_one(
-        {
-            "_id": ObjectId(user["_id"])
-        }
-    )
-
-    return {
-        "userUuid": updated_user["userUuid"],
-        "name": updated_user["name"],
-        "email": updated_user["email"],
-        "role": updated_user["role"],
-
-        "phone": updated_user.get("phone"),
-
-        "addresses": updated_user.get(
-            "addresses",
-            []
-        )
-    }
-
-
-# ----------------------------------------------------------------------------------------------------------
-# Get All Saved Addresses
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# GET ADDRESSES
+# ============================================================
 
 @router.get("/users/me/addresses")
 def get_addresses(
     user: dict = Depends(get_current_user)
 ):
 
-    addresses = user.get(
-        "addresses",
-        []
-    )
-
-    # ----------------------------------------------------------
-    # Migrate old address if necessary
-    # ----------------------------------------------------------
-
-    old_address = user.get("address")
-
-    if not addresses and old_address:
-
-        migrated_address = {
-            "addressUuid": str(uuid.uuid4()),
-            "label": "Home",
-            "street": old_address.get("street", ""),
-            "city": old_address.get("city", ""),
-            "state": old_address.get("state", ""),
-            "pincode": old_address.get("pincode", "")
-        }
-
-        addresses = [migrated_address]
-
-        user_collection.update_one(
-            {
-                "_id": ObjectId(user["_id"])
-            },
-            {
-                "$set": {
-                    "addresses": addresses
-                },
-                "$unset": {
-                    "address": ""
-                }
-            }
-        )
-
-    return addresses
+    return get_addresses_service(user)
 
 
-# ----------------------------------------------------------------------------------------------------------
-# Add New Address
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# ADD ADDRESS
+# ============================================================
 
 @router.post("/users/me/addresses")
 def add_address(
@@ -282,37 +96,15 @@ def add_address(
     user: dict = Depends(get_current_user)
 ):
 
-    new_address = {
-        "addressUuid": str(uuid.uuid4()),
-        **address_data.model_dump()
-    }
-
-    result = user_collection.update_one(
-        {
-            "_id": ObjectId(user["_id"])
-        },
-        {
-            "$push": {
-                "addresses": new_address
-            }
-        }
+    return add_address_service(
+        address_data,
+        user
     )
 
-    if result.matched_count == 0:
-        raise HTTPException(
-            status_code=404,
-            detail="User Not Found"
-        )
 
-    return {
-        "message": "Address added successfully",
-        "address": new_address
-    }
-
-
-# ----------------------------------------------------------------------------------------------------------
-# Update Existing Address
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# UPDATE ADDRESS
+# ============================================================
 
 @router.put("/users/me/addresses/{addressUuid}")
 def update_address(
@@ -321,52 +113,16 @@ def update_address(
     user: dict = Depends(get_current_user)
 ):
 
-    addresses = user.get(
-        "addresses",
-        []
+    return update_address_service(
+        addressUuid,
+        address_data,
+        user
     )
 
-    address_found = False
 
-    for address in addresses:
-
-        if address.get("addressUuid") == addressUuid:
-
-            address["label"] = address_data.label
-            address["street"] = address_data.street
-            address["city"] = address_data.city
-            address["state"] = address_data.state
-            address["pincode"] = address_data.pincode
-
-            address_found = True
-            break
-
-    if not address_found:
-        raise HTTPException(
-            status_code=404,
-            detail="Address Not Found"
-        )
-
-    user_collection.update_one(
-        {
-            "_id": ObjectId(user["_id"])
-        },
-        {
-            "$set": {
-                "addresses": addresses
-            }
-        }
-    )
-
-    return {
-        "message": "Address updated successfully",
-        "address": address
-    }
-
-
-# ----------------------------------------------------------------------------------------------------------
-# Delete Address
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# DELETE ADDRESS
+# ============================================================
 
 @router.delete("/users/me/addresses/{addressUuid}")
 def delete_address(
@@ -374,47 +130,19 @@ def delete_address(
     user: dict = Depends(get_current_user)
 ):
 
-    addresses = user.get(
-        "addresses",
-        []
+    return delete_address_service(
+        addressUuid,
+        user
     )
 
-    updated_addresses = [
-        address
-        for address in addresses
-        if address.get("addressUuid") != addressUuid
-    ]
 
-    if len(updated_addresses) == len(addresses):
-
-        raise HTTPException(
-            status_code=404,
-            detail="Address Not Found"
-        )
-
-    user_collection.update_one(
-        {
-            "_id": ObjectId(user["_id"])
-        },
-        {
-            "$set": {
-                "addresses": updated_addresses
-            }
-        }
-    )
-
-    return {
-        "message": "Address deleted successfully"
-    }
-
-
-# ----------------------------------------------------------------------------------------------------------
-# Admin API
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# ADMIN TEST
+# ============================================================
 
 @router.get("/admin/test")
 def admin_test(
-    user=Depends(get_current_user)
+    user: dict = Depends(get_current_user)
 ):
 
     require_admin(user)
@@ -425,9 +153,9 @@ def admin_test(
     }
 
 
-# ----------------------------------------------------------------------------------------------------------
-# Admin - Get All Users
-# ----------------------------------------------------------------------------------------------------------
+# ============================================================
+# ADMIN - GET ALL USERS
+# ============================================================
 
 @router.get("/admin/users")
 def get_all_users(
@@ -436,14 +164,4 @@ def get_all_users(
 
     require_admin(admin)
 
-    users = list(
-        user_collection.find(
-            {},
-            {
-                "_id": 0,
-                "password": 0
-            }
-        )
-    )
-
-    return users
+    return get_all_users_service()

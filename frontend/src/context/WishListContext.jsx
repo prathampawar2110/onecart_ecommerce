@@ -170,6 +170,13 @@ export function WishlistProvider({ children }) {
 
   }
 
+  //----------------------------------------------------------------------
+
+  function handleLogout () {
+    localStorage.removeItem("access_token")
+    window.dispatchEvent(new Event("auth-change"));
+  }
+
   // ------------------------------------------------------------------
 
   return (
@@ -181,6 +188,7 @@ export function WishlistProvider({ children }) {
         removeFromWishlist,
         isInWishlist,
         wishlistLoaded,
+        handleLogout,
       }}
     >
 
@@ -198,128 +206,3 @@ export function useWishlist() {
   return useContext(WishListContext);
 
 }
-
-
-// "use client";
-
-// import { createContext, useContext, useEffect, useState } from "react";
-
-// import {
-//   getWishlist,
-//   addToWishlist as addWishlistAPI,
-//   removeFromWishlist as removeWishlistAPI,
-// } from "@/services/wishlistServices";
-
-// // import { getProductById } from "@/services/productService";
-
-// const WishListContext = createContext();
-
-// export function WishlistProvider({ children }) {
-//   const [wishlistItems, setWishlistItems] = useState([]);
-//   const [wishlistLoaded, setWishlistLoaded] = useState(false);
-
-//   // ---------------------------------------------------------------------------------------------------------------------------------
-//   // Load Wishlist From Backend
-
-//   useEffect(() => {
-//     async function loadWishlist() {
-//       const token = localStorage.getItem("access_token");
-
-//       if (!token) {
-//         setWishlistItems([]);
-//         setWishlistLoaded(true);
-//         return;
-//       }
-
-//       try {
-//         const data = await getWishlist();
-
-//         console.log("Wishlist From Backend:", data);
-//         console.log("Wishlist Products:", data.products);
-
-//         // Backend already returns complete product objects
-//         setWishlistItems(data.products || []);
-//       } catch (error) {
-//         console.error("Error loading wishlist:", error);
-//         setWishlistItems([]);
-//       } finally {
-//         setWishlistLoaded(true);
-//       }
-//     }
-
-//     loadWishlist();
-//   }, []);
-
-//   // ---------------------------------------------------------------------------------------------------------------------------------
-//   // Add Product To Wishlist
-
-//   async function addToWishlist(product) {
-//     const token = localStorage.getItem("access_token");
-
-//     if (!token) {
-//       return;
-//     }
-
-//     try {
-//       const exists = wishlistItems.some(
-//         (item) => item.productUuid === product.productUuid,
-//       );
-
-//       if (exists) {
-//         return;
-//       }
-
-//       await addWishlistAPI(product.productUuid);
-
-//       setWishlistItems((previousItems) => [...previousItems, product]);
-//     } catch (error) {
-//       console.error("Error adding product to wishlist:", error);
-//     }
-//   }
-
-//   // ---------------------------------------------------------------------------------------------------------------------------------
-//   // Remove Product From Wishlist
-
-//   async function removeFromWishlist(productUuid) {
-//     try {
-//       await removeWishlistAPI(productUuid);
-
-//       setWishlistItems((previousItems) =>
-//         previousItems.filter((item) => item.productUuid !== productUuid),
-//       );
-//     } catch (error) {
-//       console.error("Error removing product from wishlist:", error);
-//     }
-//   }
-
-//   // ---------------------------------------------------------------------------------------------------------------------------------
-//   // Check Product
-
-//   function isInWishlist(productUuid) {
-//     return wishlistItems.some((item) => item.productUuid === productUuid);
-//   }
-
-//   // ---------------------------------------------------------------------------------------------------------------------------------
-
-//   return (
-//     <WishListContext.Provider
-//       value={{
-//         wishlistItems,
-//         addToWishlist,
-//         removeFromWishlist,
-//         isInWishlist,
-//         wishlistLoaded,
-//       }}
-//     >
-//       {children}
-//     </WishListContext.Provider>
-//   );
-// }
-
-// // ---------------------------------------------------------------------------------------------------------------------------------
-
-// export function useWishlist() {
-//   return useContext(WishListContext);
-// }
-
-// //-------------------------------------------------------------------------------------------------------------------------------

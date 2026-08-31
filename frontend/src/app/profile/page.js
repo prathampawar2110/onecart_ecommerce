@@ -3,23 +3,42 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+
+import {
+  ArrowLeft,
+  Edit3,
+  LogOut,
+  MapPin,
+  PackageCheck,
+  Phone,
+  Plus,
+  ReceiptText,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
+
 const API_URL = "http://127.0.0.1:8000";
 
 export default function Profile() {
   const router = useRouter();
 
+  // ==========================================================
+  // PROFILE STATE
+  // ==========================================================
+
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ---------------------------------------------------------------
-  // Address
-  // ---------------------------------------------------------------
+  // ==========================================================
+  // ADDRESS STATE
+  // ==========================================================
 
   const [addresses, setAddresses] = useState([]);
-
   const [showAddressForm, setShowAddressForm] = useState(false);
-
   const [editingAddressUuid, setEditingAddressUuid] = useState(null);
+  const [addressLoading, setAddressLoading] = useState(false);
 
   const [address, setAddress] = useState({
     label: "",
@@ -29,36 +48,126 @@ export default function Profile() {
     pincode: "",
   });
 
-  const [addressLoading, setAddressLoading] = useState(false);
-
-  // ---------------------------------------------------------------
-  // Phone
-  // ---------------------------------------------------------------
+  // ==========================================================
+  // PHONE STATE
+  // ==========================================================
 
   const [phone, setPhone] = useState("");
-
   const [showPhoneForm, setShowPhoneForm] = useState(false);
 
-  // ---------------------------------------------------------------
-  // Messages
-  // ---------------------------------------------------------------
+  // ==========================================================
+  // MESSAGE / ERROR STATE
+  // ==========================================================
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // ---------------------------------------------------------------
-  // Purchase History
-  // ---------------------------------------------------------------
+  // ==========================================================
+  // PURCHASE HISTORY STATE
+  // ==========================================================
 
   const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
-
   const [orders, setOrders] = useState([]);
-
+  const [orderCount, setOrderCount] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
-  // ===============================================================
-  // Temporary Messages
-  // ===============================================================
+  // ==========================================================
+  // LOGOUT STATE
+  // ==========================================================
+
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // ==========================================================
+  // GET USER PROFILE
+  // ==========================================================
+
+  useEffect(() => {
+    async function getUserProfile() {
+      const token = localStorage.getItem("access_token");
+
+      if (!token) {
+        router.replace("/login");
+        return;
+      }
+
+      try {
+        // ------------------------------------------------------
+        // GET USER PROFILE
+        // ------------------------------------------------------
+
+        const response = await fetch(`${API_URL}/users/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        
+        console.log("CREATED AT:", data[0]?.created_at);
+        console.log("TYPE:", typeof data[0]?.created_at);
+
+        if (!response.ok) {
+          throw new Error(
+            data.detail || "Failed to load profile"
+          );
+        }
+
+        setUser(data);
+        setPhone(data.phone || "");
+        setAddresses(data.addresses || []);
+
+        // ------------------------------------------------------
+        // GET ORDERS FOR ORDER COUNT
+        // ------------------------------------------------------
+
+        try {
+          const orderResponse = await fetch(
+            `${API_URL}/orders/my-orders`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          const orderData = await orderResponse.json();
+
+          if (orderResponse.ok && Array.isArray(orderData)) {
+            // Store the total number of orders
+            setOrderCount(orderData.length);
+          }
+        } catch (orderError) {
+          console.error(
+            "Order Count Error:",
+            orderError
+          );
+        }
+      } catch (error) {
+        console.error("Profile Error:", error);
+
+        localStorage.removeItem("access_token");
+
+        router.replace("/login");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    getUserProfile();
+  }, [router]);
+
+  function formatOrderId(orderUuid) {
+    if (!orderUuid) {
+      return "N/A";
+    }
+
+    return `ORD-${orderUuid.slice(-5).toUpperCase()}`;
+  }
+
+  // ==========================================================
+  // MESSAGE HELPERS
+  // ==========================================================
 
   function showMessage(text) {
     setMessage(text);
@@ -76,56 +185,9 @@ export default function Profile() {
     }, 4000);
   }
 
-  // ===============================================================
-  // Get User Profile
-  // ===============================================================
-
-  useEffect(() => {
-    async function getUserProfile() {
-      const token = localStorage.getItem("access_token");
-
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_URL}/users/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || "Failed to load profile");
-        }
-
-        console.log("Profile:", data);
-
-        setUser(data);
-
-        setPhone(data.phone || "");
-
-        setAddresses(data.addresses || []);
-      } catch (error) {
-        console.error("Profile Error:", error);
-
-        localStorage.removeItem("access_token");
-
-        router.push("/login");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    getUserProfile();
-  }, [router]);
-
-  // ===============================================================
-  // Address Form Reset
-  // ===============================================================
+  // ==========================================================
+  // ADDRESS FUNCTIONS
+  // ==========================================================
 
   function resetAddressForm() {
     setAddress({
@@ -137,13 +199,8 @@ export default function Profile() {
     });
 
     setEditingAddressUuid(null);
-
     setShowAddressForm(false);
   }
-
-  // ===============================================================
-  // Add Address Button
-  // ===============================================================
 
   function handleAddAddress() {
     setMessage("");
@@ -158,13 +215,8 @@ export default function Profile() {
     });
 
     setEditingAddressUuid(null);
-
     setShowAddressForm(true);
   }
-
-  // ===============================================================
-  // Edit Address
-  // ===============================================================
 
   function handleEditAddress(savedAddress) {
     setMessage("");
@@ -183,10 +235,6 @@ export default function Profile() {
     setShowAddressForm(true);
   }
 
-  // ===============================================================
-  // Handle Address Input
-  // ===============================================================
-
   function handleAddressChange(event) {
     const { name, value } = event.target;
 
@@ -195,10 +243,6 @@ export default function Profile() {
       [name]: value,
     }));
   }
-
-  // ===============================================================
-  // Save Address
-  // ===============================================================
 
   async function handleSaveAddress(event) {
     event.preventDefault();
@@ -209,11 +253,9 @@ export default function Profile() {
     const token = localStorage.getItem("access_token");
 
     if (!token) {
-      router.push("/login");
+      router.replace("/login");
       return;
     }
-
-    // Basic validation
 
     if (
       !address.label.trim() ||
@@ -247,12 +289,10 @@ export default function Profile() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Failed to save address");
+        throw new Error(
+          data.detail || "Failed to save address"
+        );
       }
-
-      // -----------------------------------------------------------
-      // Add New Address
-      // -----------------------------------------------------------
 
       if (!editingAddressUuid) {
         setAddresses((previousAddresses) => [
@@ -261,18 +301,13 @@ export default function Profile() {
         ]);
 
         showMessage("Address added successfully.");
-      }
-
-      // -----------------------------------------------------------
-      // Update Existing Address
-      // -----------------------------------------------------------
-      else {
+      } else {
         setAddresses((previousAddresses) =>
           previousAddresses.map((savedAddress) =>
             savedAddress.addressUuid === editingAddressUuid
               ? data.address
-              : savedAddress,
-          ),
+              : savedAddress
+          )
         );
 
         showMessage("Address updated successfully.");
@@ -281,20 +316,15 @@ export default function Profile() {
       resetAddressForm();
     } catch (error) {
       console.error("Save Address Error:", error);
-
       showError(error.message);
     } finally {
       setAddressLoading(false);
     }
   }
 
-  // ===============================================================
-  // Delete Address
-  // ===============================================================
-
   async function handleDeleteAddress(addressUuid) {
     const confirmDelete = window.confirm(
-      "Do you really want to delete this address?",
+      "Do you really want to delete this address?"
     );
 
     if (!confirmDelete) {
@@ -307,7 +337,7 @@ export default function Profile() {
     const token = localStorage.getItem("access_token");
 
     if (!token) {
-      router.push("/login");
+      router.replace("/login");
       return;
     }
 
@@ -319,32 +349,34 @@ export default function Profile() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        },
+        }
       );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Failed to delete address");
+        throw new Error(
+          data.detail || "Failed to delete address"
+        );
       }
 
       setAddresses((previousAddresses) =>
         previousAddresses.filter(
-          (savedAddress) => savedAddress.addressUuid !== addressUuid,
-        ),
+          (savedAddress) =>
+            savedAddress.addressUuid !== addressUuid
+        )
       );
 
       showMessage("Address deleted successfully.");
     } catch (error) {
       console.error("Delete Address Error:", error);
-
       showError(error.message);
     }
   }
 
-  // ===============================================================
-  // Save Phone
-  // ===============================================================
+  // ==========================================================
+  // PHONE FUNCTIONS
+  // ==========================================================
 
   async function handleSavePhone(event) {
     event.preventDefault();
@@ -355,19 +387,17 @@ export default function Profile() {
     const token = localStorage.getItem("access_token");
 
     if (!token) {
-      router.push("/login");
+      router.replace("/login");
       return;
     }
 
     try {
       const response = await fetch(`${API_URL}/users/me`, {
         method: "PUT",
-
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-
         body: JSON.stringify({
           phone,
         }),
@@ -376,26 +406,25 @@ export default function Profile() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Failed to update phone");
+        throw new Error(
+          data.detail || "Failed to update phone"
+        );
       }
 
       setUser(data);
-
       setPhone(data.phone || "");
+      setShowPhoneForm(false);
 
       showMessage("Phone number updated successfully.");
-
-      setShowPhoneForm(false);
     } catch (error) {
       console.error("Phone Update Error:", error);
-
       showError(error.message);
     }
   }
 
-  // ===============================================================
-  // Purchase History
-  // ===============================================================
+  // ==========================================================
+  // PURCHASE HISTORY
+  // ==========================================================
 
   async function handlePurchaseHistory() {
     if (showPurchaseHistory) {
@@ -404,34 +433,47 @@ export default function Profile() {
     }
 
     setOrdersLoading(true);
-
     setError("");
 
     const token = localStorage.getItem("access_token");
 
     if (!token) {
-      router.push("/login");
+      router.replace("/login");
       return;
     }
 
     try {
-      const response = await fetch(`${API_URL}/orders/my-orders`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${API_URL}/orders/my-orders`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       const data = await response.json();
 
+      console.log("ORDERS FROM API:", data);
+
       if (!response.ok) {
-        throw new Error(data.detail || "Failed to get purchase history");
+        throw new Error(
+          data.detail || "Failed to get purchase history"
+        );
       }
 
+      // Only show latest 4 orders in purchase history
       setOrders(data.slice(0, 4));
+
+      // Keep the total order count updated
+      setOrderCount(data.length);
 
       setShowPurchaseHistory(true);
     } catch (error) {
-      console.error("Purchase History Error:", error);
+      console.error(
+        "Purchase History Error:",
+        error
+      );
 
       showError(error.message);
     } finally {
@@ -439,437 +481,599 @@ export default function Profile() {
     }
   }
 
-  // ===============================================================
-  // Logout
-  // ===============================================================
+  // ==========================================================
+  // LOGOUT
+  // ==========================================================
 
   function handleLogout() {
-    const confirmLogout = window.confirm("Do you really want to logout?");
+    setShowLogoutModal(true);
+  }
 
-    if (!confirmLogout) {
-      return;
-    }
-
+  function confirmLogout() {
     localStorage.removeItem("access_token");
 
     window.dispatchEvent(new Event("auth-change"));
 
-    router.push("/login");
+    setShowLogoutModal(false);
+
+    router.replace("/login");
   }
 
-  // ===============================================================
-  // Loading
-  // ===============================================================
+  function cancelLogout() {
+    setShowLogoutModal(false);
+  }
+
+  // ==========================================================
+  // UTILITY FUNCTIONS
+  // ==========================================================
+
+  function formatCurrency(value) {
+    return `₹${Number(value || 0).toLocaleString("en-IN")}`;
+  }
+
+  function formatPaymentMethod(paymentMethod) {
+    if (paymentMethod === "cod") {
+      return "Cash on Delivery";
+    }
+
+    if (paymentMethod === "upi") {
+      return "UPI";
+    }
+
+    if (paymentMethod === "card") {
+      return "Card";
+    }
+
+    return paymentMethod || "N/A";
+  }
+  //--------------------------------------------------------
+  function formatOrder(createdAt) {
+    if (!createdAt) {
+      return "Date not available";
+    }
+
+    const date = new Date(createdAt)
+
+    if (Number.isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+
+    return date.toLocaleString("en-IN" , {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+
+  function getInitial(name) {
+    return (
+      name?.trim()?.charAt(0)?.toUpperCase() || "U"
+    );
+  }
+
+  // ==========================================================
+  // LOADING UI
+  // ==========================================================
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh] px-4">
-        <p className="text-lg sm:text-xl text-black text-center">
-          Loading Profile...
-        </p>
+      <div className="min-h-[70vh] bg-slate-50 px-4 py-8 sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="h-8 w-40 animate-pulse rounded bg-slate-200" />
+
+          <div className="mt-6 grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">
+            <div className="h-80 animate-pulse rounded-lg bg-white shadow-sm" />
+
+            <div className="h-96 animate-pulse rounded-lg bg-white shadow-sm" />
+          </div>
+        </div>
       </div>
     );
   }
 
-  // ===============================================================
-  // UI
-  // ===============================================================
+  // ==========================================================
+  // MAIN UI
+  // ==========================================================
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 sm:py-10 px-4 sm:px-6">
-      <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg p-5 sm:p-8">
-          {/* ===================================================== */}
-          {/* Header */}
-          {/* ===================================================== */}
+    <div className="min-h-screen bg-slate-50 px-3 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
 
-          <div className="mb-8">
-            {/* Close / Back Button */}
+        {/* BACK BUTTON */}
 
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="
-                mb-5
-                inline-flex
-                items-center
-                gap-2
-                px-4
-                py-2
-                border
-                border-gray-300
-                text-gray-700
-                rounded-lg
-                font-semibold
-                hover:bg-gray-100
-                transition
-                cursor-pointer
-              "
-            >
-              ← Close
-            </button>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="
+            inline-flex
+            items-center
+            gap-2
+            rounded-lg
+            border
+            border-slate-300
+            bg-white
+            px-4
+            py-2.5
+            text-sm
+            font-semibold
+            text-slate-700
+            shadow-sm
+            transition
+            hover:bg-slate-100
+          "
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
 
-            <h1 className="text-2xl sm:text-3xl font-bold text-black">
-              My Profile
-            </h1>
+        {/* SUCCESS MESSAGE */}
 
-            <p className="text-sm text-gray-500 mt-1">
-              Manage your account and saved addresses
-            </p>
+        {message && (
+          <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+            {message}
           </div>
+        )}
 
-          {/* ===================================================== */}
-          {/* Messages */}
-          {/* ===================================================== */}
+        {/* ERROR MESSAGE */}
 
-          {message && (
-            <div className="mb-5 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
-              {message}
-            </div>
-          )}
+        {error && (
+          <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            {error}
+          </div>
+        )}
 
-          {error && (
-            <div className="mb-5 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
-              {error}
-            </div>
-          )}
+        {user && (
+          <div className="mt-5 grid gap-5 lg:grid-cols-[20rem_minmax(0,1fr)]">
 
-          {user && (
-            <>
-              {/* ================================================= */}
-              {/* Basic Information */}
-              {/* ================================================= */}
+            {/* =================================================
+                LEFT SIDEBAR
+            ================================================== */}
 
-              <div className="space-y-5">
-                <div>
-                  <p className="text-sm text-gray-500">Name</p>
+            <aside className="space-y-5">
 
-                  <p className="text-lg font-semibold text-gray-800 capitalize wrap-break-words">
+              {/* PROFILE CARD */}
+
+              <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-col items-center text-center">
+
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-950 text-3xl font-bold text-white">
+                    {getInitial(user.name)}
+                  </div>
+
+                  <h1 className="mt-4 text-2xl font-bold capitalize text-slate-950">
                     {user.name}
-                  </p>
-                </div>
+                  </h1>
 
-                <div>
-                  <p className="text-sm text-gray-500">Email</p>
-
-                  <p className="text-lg font-semibold text-gray-800 break-all">
+                  <p className="mt-1 break-all text-sm text-slate-500">
                     {user.email}
                   </p>
-                </div>
 
-                <div>
-                  <p className="text-sm text-gray-500">Account Type</p>
-
-                  <p className="text-lg font-semibold text-gray-800 capitalize">
+                  <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold capitalize text-blue-700 ring-1 ring-blue-200">
+                    <ShieldCheck className="h-3.5 w-3.5" />
                     {user.role}
-                  </p>
+                  </span>
                 </div>
-              </div>
 
-              {/* ================================================= */}
-              {/* Phone */}
-              {/* ================================================= */}
+                <div className="mt-6 grid grid-cols-2 gap-3">
 
-              <div className="mt-8 border-t border-gray-200 pt-7">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <MiniStat
+                    label="Addresses"
+                    value={addresses.length}
+                  />
+
+                  {/* IMPORTANT:
+                      Use orderCount instead of orders.length
+                  */}
+
+                  <MiniStat
+                    label="Orders"
+                    value={orderCount}
+                  />
+
+                </div>
+              </section>
+
+              {/* ACCOUNT ACTIONS */}
+
+              <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+
+                <h2 className="text-base font-bold text-slate-950">
+                  Account Actions
+                </h2>
+
+                <div className="mt-4 space-y-3">
+
+                  {/* PURCHASE HISTORY */}
+
+                  <button
+                    type="button"
+                    onClick={handlePurchaseHistory}
+                    className="
+                      inline-flex
+                      w-full
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-lg
+                      border
+                      border-blue-600
+                      px-4
+                      py-3
+                      text-sm
+                      font-semibold
+                      text-blue-700
+                      transition
+                      hover:bg-blue-50
+                    "
+                  >
+                    <ReceiptText className="h-4 w-4" />
+
+                    {showPurchaseHistory
+                      ? "Hide Orders"
+                      : "Purchase History"}
+                  </button>
+
+                  {/* LOGOUT */}
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="
+                      inline-flex
+                      w-full
+                      items-center
+                      justify-center
+                      gap-2
+                      rounded-lg
+                      border
+                      border-red-500
+                      px-4
+                      py-3
+                      text-sm
+                      font-semibold
+                      text-red-600
+                      transition
+                      hover:bg-red-50
+                    "
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log Out
+                  </button>
+
+                </div>
+              </section>
+            </aside>
+
+            {/* =================================================
+                MAIN CONTENT
+            ================================================== */}
+
+            <main className="space-y-5">
+
+              {/* PROFILE DETAILS */}
+
+              <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+
+                <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
+
                   <div>
-                    <h2 className="text-xl font-bold text-gray-800">
-                      Phone Number
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+                      Account
+                    </p>
+
+                    <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                      Profile Details
                     </h2>
 
-                    <p className="text-gray-700 mt-2">
-                      {user.phone || "Not Added"}
+                    <p className="mt-1 text-sm text-slate-500">
+                      Manage your account details for faster checkout.
                     </p>
+                  </div>
+
+                </div>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-3">
+
+                  <InfoTile
+                    icon={UserRound}
+                    label="Name"
+                    value={user.name}
+                    capitalize
+                  />
+
+                  <InfoTile
+                    label="Email"
+                    value={user.email}
+                  />
+
+                  <InfoTile
+                    icon={ShieldCheck}
+                    label="Account Type"
+                    value={user.role}
+                    capitalize
+                  />
+
+                </div>
+              </section>
+
+              {/* PHONE */}
+
+              <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                  <div className="flex items-start gap-3">
+
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                      <Phone className="h-5 w-5" />
+                    </span>
+
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-950">
+                        Phone Number
+                      </h2>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        {user.phone || "No phone number added"}
+                      </p>
+                    </div>
+
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => setShowPhoneForm(!showPhoneForm)}
+                    onClick={() =>
+                      setShowPhoneForm(!showPhoneForm)
+                    }
                     className="
+                      inline-flex
                       w-full
-                      sm:w-auto
-                      px-5
-                      py-2.5
-                      bg-blue-600
-                      text-white
+                      items-center
+                      justify-center
+                      gap-2
                       rounded-lg
+                      bg-blue-600
+                      px-4
+                      py-2.5
+                      text-sm
                       font-semibold
-                      hover:bg-blue-700
+                      text-white
                       transition
-                      cursor-pointer
+                      hover:bg-blue-700
+                      sm:w-auto
                     "
                   >
-                    {showPhoneForm ? "Cancel" : "Edit Phone"}
+                    {showPhoneForm ? (
+                      <>
+                        <X className="h-4 w-4" />
+                        Cancel
+                      </>
+                    ) : (
+                      <>
+                        <Edit3 className="h-4 w-4" />
+                        Edit Phone
+                      </>
+                    )}
                   </button>
+
                 </div>
 
                 {showPhoneForm && (
-                  <form onSubmit={handleSavePhone} className="mt-5">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number
-                    </label>
-
+                  <form
+                    onSubmit={handleSavePhone}
+                    className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
+                  >
                     <input
                       type="tel"
                       value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
+                      onChange={(event) =>
+                        setPhone(event.target.value)
+                      }
                       placeholder="Enter phone number"
-                      className="
-                        w-full
-                        border
-                        border-gray-300
-                        rounded-lg
-                        px-4
-                        py-3
-                        text-black
-                        focus:outline-none
-                        focus:ring-2
-                        focus:ring-blue-500
-                      "
+                      className={inputClassName}
                     />
 
                     <button
                       type="submit"
-                      className="
-                        w-full
-                        mt-4
-                        bg-blue-600
-                        text-white
-                        py-3
-                        rounded-lg
-                        font-semibold
-                        hover:bg-blue-700
-                        transition
-                        cursor-pointer
-                      "
+                      className="rounded-lg bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                     >
                       Save Phone
                     </button>
                   </form>
                 )}
-              </div>
 
-              {/* ================================================= */}
-              {/* Saved Addresses */}
-              {/* ================================================= */}
+              </section>
 
-              <div className="mt-8 border-t border-gray-200 pt-7">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+              {/* =================================================
+                  SAVED ADDRESSES
+              ================================================== */}
+
+              <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
                   <div>
-                    <h2 className="text-xl font-bold text-gray-800">
-                      Saved Addresses
-                    </h2>
+                    <div className="flex items-center gap-3">
 
-                    <p className="text-sm text-gray-500 mt-1">
-                      Save multiple addresses for faster checkout.
-                    </p>
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                        <MapPin className="h-5 w-5" />
+                      </span>
+
+                      <div>
+                        <h2 className="text-lg font-bold text-slate-950">
+                          Saved Addresses
+                        </h2>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          Keep delivery addresses ready for checkout.
+                        </p>
+                      </div>
+
+                    </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={handleAddAddress}
                     className="
+                      inline-flex
                       w-full
-                      sm:w-auto
-                      px-5
-                      py-2.5
-                      bg-blue-600
-                      text-white
+                      items-center
+                      justify-center
+                      gap-2
                       rounded-lg
+                      bg-slate-950
+                      px-4
+                      py-2.5
+                      text-sm
                       font-semibold
-                      hover:bg-blue-700
+                      text-white
                       transition
-                      cursor-pointer
+                      hover:bg-slate-800
+                      sm:w-auto
                     "
                   >
-                    + Add Address
+                    <Plus className="h-4 w-4" />
+                    Add Address
                   </button>
+
                 </div>
 
-                {/* ------------------------------------------------ */}
-                {/* Address Form */}
-                {/* ------------------------------------------------ */}
+                {/* ADDRESS FORM */}
 
                 {showAddressForm && (
                   <form
                     onSubmit={handleSaveAddress}
-                    className="
-                      mb-6
-                      border
-                      border-blue-200
-                      bg-blue-50
-                      rounded-xl
-                      p-5
-                      sm:p-6
-                    "
+                    className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4 sm:p-5"
                   >
-                    <h3 className="text-lg font-bold text-gray-800 mb-5">
-                      {editingAddressUuid ? "Edit Address" : "Add New Address"}
-                    </h3>
 
-                    {/* Label */}
+                    <div className="flex items-start justify-between gap-3">
 
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Address Label
-                      </label>
-
-                      <input
-                        type="text"
-                        name="label"
-                        value={address.label}
-                        onChange={handleAddressChange}
-                        placeholder="Home / Work / Office"
-                        className="
-                          w-full
-                          border
-                          border-gray-300
-                          rounded-lg
-                          px-4
-                          py-3
-                          text-black
-                          bg-white
-                          focus:outline-none
-                          focus:ring-2
-                          focus:ring-blue-500
-                        "
-                      />
-                    </div>
-
-                    {/* Street */}
-
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Street / House Address
-                      </label>
-
-                      <input
-                        type="text"
-                        name="street"
-                        value={address.street}
-                        onChange={handleAddressChange}
-                        placeholder="Enter your address"
-                        className="
-                          w-full
-                          border
-                          border-gray-300
-                          rounded-lg
-                          px-4
-                          py-3
-                          text-black
-                          bg-white
-                          focus:outline-none
-                          focus:ring-2
-                          focus:ring-blue-500
-                        "
-                      />
-                    </div>
-
-                    {/* City + State */}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          City
-                        </label>
+                        <h3 className="font-bold text-slate-950">
+                          {editingAddressUuid
+                            ? "Edit Address"
+                            : "Add Address"}
+                        </h3>
 
+                        <p className="mt-1 text-sm text-slate-500">
+                          All fields are required for delivery.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={resetAddressForm}
+                        title="Close address form"
+                        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+
+                    </div>
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+
+                      <Field label="Label">
+                        <input
+                          type="text"
+                          name="label"
+                          value={address.label}
+                          onChange={handleAddressChange}
+                          placeholder="Home / Work / Office"
+                          className={inputClassName}
+                        />
+                      </Field>
+
+                      <Field label="Pincode">
+                        <input
+                          type="text"
+                          name="pincode"
+                          value={address.pincode}
+                          onChange={handleAddressChange}
+                          placeholder="Enter pincode"
+                          className={inputClassName}
+                        />
+                      </Field>
+
+                      <Field
+                        label="Street / House Address"
+                        className="sm:col-span-2"
+                      >
+                        <input
+                          type="text"
+                          name="street"
+                          value={address.street}
+                          onChange={handleAddressChange}
+                          placeholder="Enter your address"
+                          className={inputClassName}
+                        />
+                      </Field>
+
+                      <Field label="City">
                         <input
                           type="text"
                           name="city"
                           value={address.city}
                           onChange={handleAddressChange}
                           placeholder="Enter city"
-                          className="
-                            w-full
-                            border
-                            border-gray-300
-                            rounded-lg
-                            px-4
-                            py-3
-                            text-black
-                            bg-white
-                            focus:outline-none
-                            focus:ring-2
-                            focus:ring-blue-500
-                          "
+                          className={inputClassName}
                         />
-                      </div>
+                      </Field>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          State
-                        </label>
-
+                      <Field label="State">
                         <input
                           type="text"
                           name="state"
                           value={address.state}
                           onChange={handleAddressChange}
                           placeholder="Enter state"
-                          className="
-                            w-full
-                            border
-                            border-gray-300
-                            rounded-lg
-                            px-4
-                            py-3
-                            text-black
-                            bg-white
-                            focus:outline-none
-                            focus:ring-2
-                            focus:ring-blue-500
-                          "
+                          className={inputClassName}
                         />
-                      </div>
+                      </Field>
+
                     </div>
 
-                    {/* Pincode */}
+                    <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
 
-                    <div className="mb-5">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Pincode
-                      </label>
-
-                      <input
-                        type="text"
-                        name="pincode"
-                        value={address.pincode}
-                        onChange={handleAddressChange}
-                        placeholder="Enter pincode"
+                      <button
+                        type="button"
+                        onClick={resetAddressForm}
                         className="
-                          w-full
-                          border
-                          border-gray-300
                           rounded-lg
-                          px-4
-                          py-3
-                          text-black
+                          border
+                          border-slate-300
                           bg-white
-                          focus:outline-none
-                          focus:ring-2
-                          focus:ring-blue-500
+                          px-5
+                          py-3
+                          text-sm
+                          font-semibold
+                          text-slate-700
+                          transition
+                          hover:bg-slate-100
                         "
-                      />
-                    </div>
+                      >
+                        Cancel
+                      </button>
 
-                    {/* Buttons */}
-
-                    <div className="flex flex-col sm:flex-row gap-3">
                       <button
                         type="submit"
                         disabled={addressLoading}
                         className="
-                          flex-1
-                          bg-blue-600
-                          text-white
-                          py-3
                           rounded-lg
+                          bg-blue-600
+                          px-5
+                          py-3
+                          text-sm
                           font-semibold
-                          hover:bg-blue-700
+                          text-white
                           transition
-                          cursor-pointer
-                          disabled:opacity-60
+                          hover:bg-blue-700
                           disabled:cursor-not-allowed
+                          disabled:opacity-60
                         "
                       >
                         {addressLoading
@@ -879,371 +1083,430 @@ export default function Profile() {
                             : "Save Address"}
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={resetAddressForm}
-                        className="
-                          flex-1
-                          bg-gray-200
-                          text-gray-700
-                          py-3
-                          rounded-lg
-                          font-semibold
-                          hover:bg-gray-300
-                          transition
-                          cursor-pointer
-                        "
-                      >
-                        Cancel
-                      </button>
                     </div>
                   </form>
                 )}
 
-                {/* ------------------------------------------------ */}
-                {/* Address List */}
-                {/* ------------------------------------------------ */}
+                {/* ADDRESS LIST */}
 
                 {addresses.length === 0 ? (
-                  <div
-                    className="
-                      bg-gray-50
-                      border
-                      border-gray-200
-                      rounded-xl
-                      p-6
-                      text-center
-                    "
-                  >
-                    <p className="text-gray-500">No saved addresses yet.</p>
+                  <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
 
-                    <p className="text-sm text-gray-400 mt-1">
-                      Add an address to use it during checkout.
+                    <p className="font-semibold text-slate-700">
+                      No saved addresses yet.
                     </p>
+
+                    <p className="mt-1 text-sm text-slate-500">
+                      Add one to make checkout faster.
+                    </p>
+
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="mt-5 grid gap-4 xl:grid-cols-2">
+
                     {addresses.map((savedAddress) => (
-                      <div
+                      <article
                         key={savedAddress.addressUuid}
-                        className="
-                          border
-                          border-gray-200
-                          rounded-xl
-                          p-5
-                          bg-gray-50
-                        "
+                        className="rounded-lg border border-slate-200 bg-slate-50 p-4"
                       >
-                        {/* Address Header */}
 
                         <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <span
-                              className="
-                                inline-flex
-                                px-3
-                                py-1
-                                rounded-full
-                                bg-blue-100
-                                text-blue-700
-                                text-xs
-                                font-bold
-                              "
-                            >
-                              {savedAddress.label}
-                            </span>
-                          </div>
+
+                          <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
+                            {savedAddress.label}
+                          </span>
+
+                          <MapPin className="h-5 w-5 shrink-0 text-slate-400" />
+
                         </div>
 
-                        {/* Address */}
+                        <div className="mt-4 text-sm leading-6 text-slate-600">
 
-                        <div className="mt-4 text-gray-700 text-sm leading-6">
-                          <p>{savedAddress.street}</p>
+                          <p className="font-semibold text-slate-900">
+                            {savedAddress.street}
+                          </p>
 
                           <p>
-                            {savedAddress.city}, {savedAddress.state}
+                            {savedAddress.city},{" "}
+                            {savedAddress.state}
                           </p>
 
                           <p>{savedAddress.pincode}</p>
+
                         </div>
 
-                        {/* Actions */}
+                        <div className="mt-5 flex gap-2">
 
-                        <div
-                          className="
-                            flex
-                            flex-col
-                            sm:flex-row
-                            gap-2
-                            mt-5
-                          "
-                        >
                           <button
                             type="button"
-                            onClick={() => handleEditAddress(savedAddress)}
+                            onClick={() =>
+                              handleEditAddress(savedAddress)
+                            }
                             className="
+                              inline-flex
                               flex-1
-                              border
-                              border-blue-600
-                              text-blue-600
-                              py-2.5
+                              items-center
+                              justify-center
+                              gap-2
                               rounded-lg
+                              bg-blue-50
+                              px-3
+                              py-2.5
+                              text-sm
                               font-semibold
-                              hover:bg-blue-600
-                              hover:text-white
+                              text-blue-700
                               transition
-                              cursor-pointer
+                              hover:bg-blue-100
                             "
                           >
+                            <Edit3 className="h-4 w-4" />
                             Edit
                           </button>
 
                           <button
                             type="button"
                             onClick={() =>
-                              handleDeleteAddress(savedAddress.addressUuid)
+                              handleDeleteAddress(
+                                savedAddress.addressUuid
+                              )
                             }
                             className="
+                              inline-flex
                               flex-1
-                              border
-                              border-red-500
-                              text-red-500
-                              py-2.5
+                              items-center
+                              justify-center
+                              gap-2
                               rounded-lg
+                              bg-red-50
+                              px-3
+                              py-2.5
+                              text-sm
                               font-semibold
-                              hover:bg-red-500
-                              hover:text-white
+                              text-red-700
                               transition
-                              cursor-pointer
+                              hover:bg-red-100
                             "
                           >
+                            <Trash2 className="h-4 w-4" />
                             Delete
                           </button>
+
                         </div>
-                      </div>
+                      </article>
                     ))}
+
                   </div>
                 )}
-              </div>
-            </>
-          )}
 
-          {/* ===================================================== */}
-          {/* Purchase History */}
-          {/* ===================================================== */}
+              </section>
 
-          <div className="mt-8 border-t border-gray-200 pt-7">
-            <button
-              type="button"
-              onClick={handlePurchaseHistory}
-              className="
-                w-full
-                border
-                border-blue-600
-                text-blue-600
-                py-3
-                rounded-lg
-                font-semibold
-                hover:bg-blue-600
-                hover:text-white
-                transition
-                cursor-pointer
-              "
-            >
-              {showPurchaseHistory
-                ? "Hide Purchase History"
-                : "Purchase History"}
-            </button>
-          </div>
+              {/* =================================================
+                  PURCHASE HISTORY
+              ================================================== */}
 
-          {showPurchaseHistory && (
-            <div className="mt-6">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-5">
-                Purchase History
-              </h2>
+              {showPurchaseHistory && (
+                <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
 
-              {ordersLoading ? (
-                <p className="text-gray-600">Loading purchase history...</p>
-              ) : orders.length === 0 ? (
-                <div
-                  className="
-                    bg-gray-50
-                    border
-                    border-gray-200
-                    rounded-lg
-                    p-6
-                    text-center
-                  "
-                >
-                  <p className="text-gray-600">No purchases yet.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div
-                      key={order.orderUuid}
-                      className="
-                        border
-                        border-gray-200
-                        rounded-lg
-                        p-4
-                        sm:p-5
-                        bg-gray-50
-                      "
-                    >
-                      <div
-                        className="
-                          flex
-                          flex-col
-                          sm:flex-row
-                          sm:justify-between
-                          sm:items-start
-                          gap-3
-                        "
-                      >
-                        <div className="min-w-0">
-                          <p className="text-sm text-gray-500">Order ID</p>
+                  <div className="flex items-center gap-3">
 
-                          <p
-                            className="
-                              font-semibold
-                              text-gray-800
-                              break-all
-                              text-sm
-                            "
-                          >
-                            #{order.orderUuid}
-                          </p>
-                        </div>
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
+                      <PackageCheck className="h-5 w-5" />
+                    </span>
 
-                        <span
-                          className="
-                            self-start
-                            px-3
-                            py-1
-                            rounded-full
-                            bg-blue-100
-                            text-blue-700
-                            text-sm
-                            font-medium
-                          "
-                        >
-                          {order.status}
-                        </span>
-                      </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-950">
+                        Purchase History
+                      </h2>
 
-                      {/* Products */}
-
-                      <div className="mt-4 space-y-2">
-                        {order.items.map((item, index) => (
-                          <div
-                            key={item.productUuid || index}
-                            className="
-                              flex
-                              justify-between
-                              gap-3
-                              text-gray-700
-                              text-sm
-                            "
-                          >
-                            <span>
-                              {item.name}
-                              {" × "}
-                              {item.quantity}
-                            </span>
-
-                            <span className="font-medium whitespace-nowrap">
-                              ₹{item.price * item.quantity}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Payment */}
-
-                      <div
-                        className="
-                          border-t
-                          border-gray-200
-                          mt-4
-                          pt-4
-                          flex
-                          justify-between
-                          gap-3
-                          text-gray-700
-                          text-sm
-                        "
-                      >
-                        <span className="font-medium">Payment Method</span>
-
-                        <span className="font-semibold text-right">
-                          {order.payment_method === "cod"
-                            ? "Cash on Delivery"
-                            : order.payment_method === "upi"
-                              ? "UPI"
-                              : order.payment_method === "card"
-                                ? "Card"
-                                : order.payment_method}
-                        </span>
-                      </div>
-
-                      {/* Total */}
-
-                      <div
-                        className="
-                          border-t
-                          border-gray-200
-                          mt-3
-                          pt-4
-                          flex
-                          justify-between
-                          font-bold
-                          text-gray-800
-                        "
-                      >
-                        <span>Total</span>
-
-                        <span>
-                          ₹
-                          {Number(order.total_amount || 0).toLocaleString(
-                            "en-IN",
-                          )}
-                        </span>
-                      </div>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Recent orders from your account.
+                      </p>
                     </div>
-                  ))}
-                </div>
+
+                  </div>
+
+                  {ordersLoading ? (
+                    <div className="mt-5 h-24 animate-pulse rounded-lg bg-slate-100" />
+                  ) : orders.length === 0 ? (
+                    <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                      No purchases yet.
+                    </div>
+                  ) : (
+                    <div className="mt-5 space-y-4">
+
+                      {orders.map((order) => (
+                        <article
+                          key={order.orderUuid}
+                          className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                        >
+
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+
+                            <div className="min-w-0">
+
+                              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                Order ID
+                              </p>
+
+                              <p className="mt-1 break-all text-sm font-bold text-slate-950">
+                                {formatOrderId(order.orderUuid)}
+                              </p>
+
+                            </div>
+
+                            <span className="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
+                              {order.status}
+                            </span>
+
+                            {/* <span className="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 ring-1 ring-blue-200">
+                              {formatOrder(order.datetime)}
+                            </span> */}
+
+                          </div>
+
+                          <div className="mt-4 space-y-2">
+
+                            {order.items.map((item, index) => (
+                              <div
+                                key={
+                                  item.productUuid || index
+                                }
+                                className="flex justify-between gap-3 text-sm text-slate-600"
+                              >
+
+                                <span>
+                                  {item.productName ||
+                                    item.name ||
+                                    "Product"}
+
+                                  {" x "}
+
+                                  {item.quantity}
+                                </span>
+
+                                <span className="font-semibold text-slate-950">
+                                  {formatCurrency(
+                                    Number(item.price || 0) *
+                                      Number(item.quantity || 0)
+                                  )}
+                                </span>
+
+                              </div>
+                            ))}
+
+                          </div>
+
+                          <div className="mt-4 grid gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
+
+                            <div>
+                              <p className="text-xs text-slate-400">
+                                Payment
+                              </p>
+
+                              <p className="mt-1 text-sm font-semibold text-slate-700">
+                                {formatPaymentMethod(
+                                  order.payment_method
+                                )}
+                              </p>
+                            </div>
+
+                            <div className="sm:text-right">
+                              <p className="text-xs text-slate-400">
+                                Total
+                              </p>
+
+                              <p className="mt-1 text-lg font-bold text-slate-950">
+                                {formatCurrency(
+                                  order.total_amount
+                                )}
+                              </p>
+                            </div>
+
+                          </div>
+
+                        </article>
+                      ))}
+
+                    </div>
+                  )}
+
+                </section>
               )}
+
+            </main>
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================
+          LOGOUT CONFIRMATION MODAL
+      ========================================================= */}
+
+      {showLogoutModal && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-50
+            flex
+            items-center
+            justify-center
+            bg-black/50
+            px-4
+          "
+        >
+
+          <div
+            className="
+              w-full
+              max-w-sm
+              rounded-xl
+              bg-white
+              p-6
+              shadow-2xl
+            "
+          >
+
+            <h2 className="text-xl font-bold text-slate-950">
+              Logout
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-600">
+              Are you sure you want to logout?
+            </p>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row">
+
+              <button
+                type="button"
+                onClick={cancelLogout}
+                className="
+                  flex-1
+                  rounded-lg
+                  border
+                  border-slate-300
+                  bg-white
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-slate-700
+                  transition
+                  hover:bg-slate-100
+                "
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={confirmLogout}
+                className="
+                  flex-1
+                  rounded-lg
+                  bg-red-500
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-red-600
+                "
+              >
+                Logout
+              </button>
+
             </div>
-          )}
-
-          {/* ===================================================== */}
-          {/* Logout */}
-          {/* ===================================================== */}
-
-          <div className="mt-8">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="
-                w-full
-                border
-                border-red-600
-                text-red-600
-                py-3
-                rounded-lg
-                font-semibold
-                hover:bg-red-600
-                hover:text-white
-                transition
-                cursor-pointer
-              "
-            >
-              Log Out
-            </button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
+
+// ============================================================
+// MINI STAT COMPONENT
+// ============================================================
+
+function MiniStat({ label, value }) {
+  return (
+    <div className="rounded-lg bg-slate-50 p-3 text-center">
+
+      <p className="text-lg font-bold text-slate-950">
+        {value}
+      </p>
+
+      <p className="text-xs font-medium text-slate-500">
+        {label}
+      </p>
+
+    </div>
+  );
+}
+
+// ============================================================
+// INFO TILE COMPONENT
+// ============================================================
+
+function InfoTile({
+  icon: Icon = UserRound,
+  label,
+  value,
+  capitalize = false,
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+
+      <div className="flex items-center gap-2 text-slate-400">
+
+        <Icon className="h-4 w-4" />
+
+        <p className="text-xs font-semibold uppercase tracking-wide">
+          {label}
+        </p>
+
+      </div>
+
+      <p
+        className={`mt-3 break-all text-sm font-bold text-slate-950 ${
+          capitalize ? "capitalize" : ""
+        }`}
+      >
+        {value || "N/A"}
+      </p>
+
+    </div>
+  );
+}
+
+// ============================================================
+// FORM FIELD COMPONENT
+// ============================================================
+
+function Field({
+  label,
+  children,
+  className = "",
+}) {
+  return (
+    <label className={`block ${className}`}>
+
+      <span className="text-sm font-semibold text-slate-700">
+        {label}
+      </span>
+
+      <span className="mt-2 block">
+        {children}
+      </span>
+
+    </label>
+  );
+}
+
+// ============================================================
+// INPUT STYLE
+// ============================================================
+
+const inputClassName =
+  "w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100";

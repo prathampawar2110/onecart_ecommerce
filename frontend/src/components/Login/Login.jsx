@@ -18,68 +18,84 @@ export default function Login() {
     const router = useRouter();
     
 // ---------------------------------------------------------------------------------------------------------------------------------
-    async function handleLogin (event) {
-        event.preventDefault();
+    async function handleLogin(event) {
+      event.preventDefault();
 
-        setMessage("");
-        setError("");
+      setMessage("");
+      setError("");
 
-        try{
-            // Login
-            const data = await loginUser(
-                {
-                    email : email,
-                    password : password
-                }
-            );
-            console.log("Login Successful : " ,data);
+      // validate empty fields
+      if (!email.trim() && !password.trim()) {
+        setError("Please enter your email and password");
+      }
 
-            //We store the JWT after login so we can reuse it for protected operations like Cart, Wishlist, Orders, and Profile.
-            localStorage.setItem( "access_token" , data.access_token );      
-            
-            // This tells both: CartContext WishlistContext that a new user has logged in.
-            window.dispatchEvent(new Event("auth-change"));
+      if (!email.trim()) {
+        setError("Please enter your email");
+      }
 
-            // Get Logged-in user
-            const response = await fetch(
-                "http://127.0.0.1:8000/users/me" , 
-                {
-                    method : "GET",
-                    headers : {
-                        Authorization : `Bearer ${data.access_token}`
-                    }
-                }
-            );
+      if (!password.trim()) {
+        setError("Please enter your password");
+      }
 
-            if ( !response.ok ) {
-                throw new Error("Failed to Get User Information")
-            }
+      // Check email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-            const user = await response.json();
-            console.log("Logged User : ",user);
+      if (!emailRegex.test(email)) {
+        setError("Please enter a valid email address.");
+        return;
+      }
 
-            // Check User Role
-            if ( user.role === "admin") {
-                //Admin -> Admin Dashboard
-                router.push("/admin");
-            } else {
-                // Customer -> Home Page
-                router.push("/");
-            }
+      try {
+        // Login
+        const data = await loginUser({
+          email: email,
+          password: password,
+        });
+        console.log("Login Successful : ", data);
 
-            setMessage("Login Successful : ");                                                            
+        //We store the JWT after login so we can reuse it for protected operations like Cart, Wishlist, Orders, and Profile.
+        localStorage.setItem("access_token", data.access_token);
+
+        // This tells both: CartContext WishlistContext that a new user has logged in.
+        window.dispatchEvent(new Event("auth-change"));
+
+        // Get Logged-in user
+        const response = await fetch("http://127.0.0.1:8000/users/me", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${data.access_token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to Get User Information");
         }
-        catch (error) {
-            console.error("Login error : ",error);
-            // setError(error.message);
-            if (error.message === "Invalid email or password") {
-              setError("Wrong email or password.");
-            } else if (error.message === "Failed to fetch") {
-              setError("Unable to connect to server. Please try again.");
-            } else {
-              setError(error.message || "Login failed.");
-            }
+
+        const user = await response.json();
+        console.log("Logged User : ", user);
+
+        // Check User Role
+        if (user.role === "admin") {
+          //Admin -> Admin Dashboard
+          router.push("/admin");
+        } else {
+          // Customer -> Home Page
+          router.push("/");
         }
+
+        // setMessage("Login Successful : ");
+      } catch (error) {
+        console.error("Login error : ", error);
+
+        // setError(error.message);
+        if (error.message === "Invalid email or password") {
+          setError("Wrong email or password.");
+        } else if (error.message === "Failed to fetch") {
+          setError("Unable to connect to server. Please try again.");
+        } else {
+          setError(error.message || "Login failed.");
+        }
+      }
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------
@@ -145,7 +161,7 @@ export default function Login() {
 
                             <input
                                 id= "email"
-                                type="email" name="email"
+                                type="email" name="email" required 
                                 placeholder="Enter Your Email"
                                 value={email} onChange={ (event) => setEmail(event.target.value) }
                                 className="w-full border border-gray-300 rounded-lg px-4 py-3
@@ -161,7 +177,7 @@ export default function Login() {
 
                             <input
                                 id="password"
-                                type="password" name="password"
+                                type="password" name="password" required
                                 placeholder="Enter Your Password"
                                 value={password} onChange={ (event) => setPassword(event.target.value) }
                                 className="w-full border border-gray-300 rounded-lg px-4 py-3

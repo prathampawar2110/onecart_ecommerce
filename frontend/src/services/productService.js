@@ -1,166 +1,166 @@
-const API_URL = "http://127.0.0.1:8000"
+const API_URL = "http://127.0.0.1:8000";
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 1. Get all products
+// -----------------------------------------------------------------------------
 
-// (1) to get all product 
 export async function getProducts() {
+  const response = await fetch(`${API_URL}/products`);
 
-    const response = await fetch (
-        `${API_URL}/products`                       // basically it fetch product from backend & send it to frontend
-    );
+  if (!response.ok) {
+    throw new Error("Failed to fetch products");
+  }
 
-    if (!response.ok) {
-        throw new Error ("Failed to Fetch Product");
-        // if we does't get response then it will throw above error
-    }
+  const data = await response.json();
 
-    const data = await response.json();
-    return data;
+  // console.log("GET /products response:", data);
+
+  if (!Array.isArray(data)) {
+    throw new Error("Invalid products response");
+  }
+
+  return data;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 2. Get single product by UUID
+// -----------------------------------------------------------------------------
 
-// (2) to get single product after clicking on product card
-export async function getProductById (productUuid) {
+export async function getProductById(productUuid) {
 
-    console.log("Fetching product UUID:", productUuid);
+  // console.log("Fetching product UUID:", productUuid);
 
-    const response = await fetch (
-         `http://127.0.0.1:8000/products/${productUuid}`
-    );
+  if (!productUuid) {
+    throw new Error("Product UUID is missing");
+  }
 
-    console.log(
-        "Product API status:",
-        response.status
-    );
+  const response = await fetch(
+    `${API_URL}/products/${productUuid}`,
+  );
 
-    const data = await response.json();
+  console.log("Product API status:", response.status);
 
-    console.log(
-        "Product API response:",
-        data
-    );
+  const data = await response.json();
 
-    if (!response.ok) {
-        throw new Error ("Failed to Fetch")
-    }
+  // console.log("Product API response:", data);
 
-    
-    return data;
+  if (!response.ok) {
+    throw new Error(data.detail || "Failed to fetch product");
+  }
+
+  return data;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 3. Search products
+// -----------------------------------------------------------------------------
 
-// (3) This is for search bar
-export async function searchProducts (query) {
-    const response = await fetch (
-        // `http://127.0.0.1:8000/products/search?query=${encodeURIComponent(query) }` or
-        `${API_URL}/products/search?query=${encodeURIComponent(query)}`
-    );
+export async function searchProducts(query) {
+  const response = await fetch(
+    `${API_URL}/products/search?query=${encodeURIComponent(query)}`,
+  );
 
-    if ( !response.ok ) {
-        throw new Error ( "Failed to Search Products" );
-    }
+  if (!response.ok) {
+    throw new Error("Failed to search products");
+  }
 
-    const data = await response.json()
+  const data = await response.json();
 
-    return data;
+  return data;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 4. Get products by category
+// -----------------------------------------------------------------------------
 
-// (4) Get Product By Category
-export async function getProductByCategory (category) {
-    const response = await fetch (
-        `${API_URL}/products/category/${encodeURIComponent(category)}`
-    );
+export async function getProductByCategory(category) {
+  const response = await fetch(
+    `${API_URL}/products/category/${encodeURIComponent(category)}`,
+  );
 
-    if ( !response.ok ) {
-        throw new Error ( "Failed to Fetch Category Products" );
-    }
+  if (!response.ok) {
+    throw new Error("Failed to fetch category products");
+  }
 
-    const data = await response.json()
+  const data = await response.json();
 
-    return data;
+  return data;
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 5. Admin - Add product
+// -----------------------------------------------------------------------------
 
-// Admin Releated Function
+export async function addProduct(product) {
+  const token = localStorage.getItem("access_token");
 
-//  (5) To add new product
-export async function addProduct ( product ) {
+  const response = await fetch(`${API_URL}/products`, {
+    method: "POST",
 
-    const token = localStorage.getItem("access_token");
-    
-    const response = await fetch (
-        `${API_URL}/products` ,
-        {
-            method : "POST" ,
-            headers : {
-                "Content-Type" : "application/json" ,
-                "Authorization" : `Bearer ${token}`
-            },
-            body: JSON.stringify(product)
-        }
-    );
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
 
-    if ( !response.ok ) {
-        throw new Error("Failed to Add Product");
-    }
+    body: JSON.stringify(product),
+  });
 
-    const data = await response.json();
-    return data;
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+
+    throw new Error(data.detail || "Failed to add product");
+  }
+
+  return await response.json();
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 6. Admin - Update product
+// -----------------------------------------------------------------------------
 
-// (6) To Update a Product
-export async function updateProduct(productUuid , product) {
+export async function updateProduct(productUuid, product) {
+  const token = localStorage.getItem("access_token");
 
-    const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_URL}/products/${productUuid}`, {
+    method: "PUT",
 
-    const response = await fetch (
-        `${API_URL}/products/${productUuid}` ,
-        {
-            method : "PUT" ,
-            headers : {
-                "Content-Type" : "application/json" ,
-                "Authorization" : `Bearer ${token}`
-            },
-            body: JSON.stringify(product)
-        }
-    );
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
 
-    if ( !response.ok ) {
-        throw new Error("Failed to Update Product");
-    }
+    body: JSON.stringify(product),
+  });
 
-    const data = await response.json();
-    return data;
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+
+    throw new Error(data.detail || "Failed to update product");
+  }
+
+  return await response.json();
 }
 
-//-----------------------------------------------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// 7. Admin - Delete product
+// -----------------------------------------------------------------------------
 
-// (7) To Delete a Product
-export async function deleteProduct (productUuid) {
+export async function deleteProduct(productUuid) {
+  const token = localStorage.getItem("access_token");
 
-    const token = localStorage.getItem("access_token");
+  const response = await fetch(`${API_URL}/products/${productUuid}`, {
+    method: "DELETE",
 
-    const response = await fetch (
-        `${API_URL}/products/${productUuid}` ,
-        {
-            method : "DELETE" ,
-            headers : {
-                "Authorization" : `Bearer ${token}`
-            }
-        }
-    );
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-    if ( !response.ok ) {
-        throw new Error("Failed to Delete Product");
-    }
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
 
-    const data = await response.json();
-    return data;
+    throw new Error(data.detail || "Failed to delete product");
+  }
+
+  return await response.json();
 }
