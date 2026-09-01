@@ -45,32 +45,7 @@ The project also includes an admin panel for managing products, users, and order
 ### Database
 - MongoDB
 
-## 📁 Project Structure
-
-```text
-OneCart/
-│
-├── backend/
-│   ├── database/
-│   ├── models/
-│   ├── routes/
-│   ├── schemas/
-│   ├── services/
-│   ├── utils/
-│   └── ...
-│
-├── frontend/
-│   ├── public/
-│   └── src/
-│       ├── app/
-│       ├── components/
-│       ├── context/
-│       └── services/
-│
-├── .gitignore
-└── README.md
-
-📸 Screenshots
+### 📸 Screenshots
 
 👤 Authentication
 
