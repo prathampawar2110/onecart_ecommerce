@@ -70,68 +70,68 @@ OneCart/
 ├── .gitignore
 └── README.md
 
-## 📸 Screenshots
+📸 Screenshots
 
-### 👤 Authentication
+👤 Authentication
 
-#### 🔐 Login Page
+🔐 Login Page
 
-<img src="onecart images/login_page.png" width="800">
+![Login Page](onecart images/login_page.png)
 
-#### 📝 Signup Page
+📝 Signup Page
 
-<img src="onecart images/signup_page.png" width="800">
-
-
-### 🏠 Customer Pages
-
-#### 🏠 Home Page
-
-<img src="onecart images/home_page_1.png" width="800">
-
-#### 🛍️ Products
-
-<img src="onecart images/home_page_2.png" width="800">
-
-#### 📦 Product Details
-
-<img src="onecart images/product_details.png" width="800">
-
-#### 🛒 Shopping Cart
-
-<img src="onecart images/user_cart.png" width="800">
-
-#### ❤️ Wishlist
-
-<img src="onecart images/user_wishlist.png" width="800">
-
-#### 👤 User Profile
-
-<img src="onecart images/user_profile.png" width="800">
-
-#### 📋 My Orders
-
-<img src="onecart images/user_order.png" width="800">
+![Signup Page](onecart images/signup_page.png)
 
 
-### ⚙️ Admin Panel
+🏠 Customer Pages
 
-#### 📊 Admin Dashboard
+🏠 Home Page
 
-<img src="onecart images/admin_dashboard.png" width="800">
+![Home Page](onecart images/home_page_1.png)
 
-#### 🏷️ Manage Categories
+🛍️ Products
 
-<img src="onecart images/admin_category.png" width="800">
+![Products](onecart images/home_page_2.png)
 
-#### 📦 Manage Products
+📦 Product Details
 
-<img src="onecart images/admin_product.png" width="800">
+![Product Details](onecart images/product_details.png)
 
-#### 🛒 Manage Orders
+🛒 Shopping Cart
 
-<img src="onecart images/admin_order.png" width="800">
+![Shopping Cart](onecart images/user_cart.png)
 
-#### 👥 Manage Users
+❤️ Wishlist
 
-<img src="onecart images/admin_user.png" width="800">
+![Wishlist](onecart images/user_wishlist.png)
+
+👤 User Profile
+
+![User Profile](onecart images/user_profile.png)
+
+📋 My Orders
+
+![User Orders](onecart images/user_order.png)
+
+
+⚙️ Admin Panel
+
+📊 Admin Dashboard
+
+![Admin Dashboard](onecart images/admin_dashboard.png)
+
+🏷️ Manage Categories
+
+![Admin Category](onecart images/admin_category.png)
+
+📦 Manage Products
+
+![Admin Products](onecart images/admin_product.png)
+
+🛒 Manage Orders
+
+![Admin Order](onecart images/admin_order.png)
+
+👥 Manage Users
+
+![Admin User](onecart images/admin_user.png)
