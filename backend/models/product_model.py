@@ -21,6 +21,13 @@ class Product(BaseModel):
 
     stock: int
 
+    # newley added
+    rating: float = Field(
+        default=0,
+        ge=0,
+        le=5
+    )
+
     variants: Dict[str, List[str]] = Field(
         default_factory=dict
     )

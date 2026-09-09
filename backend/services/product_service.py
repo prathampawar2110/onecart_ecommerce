@@ -23,6 +23,10 @@ def _normalize_product(product: Optional[dict]) -> Optional[dict]:
             if isinstance(url, str) and url.strip()
         ]
 
+    # newly added
+    if "rating" not in product:
+        product["rating"] = 0
+
     return product
 
 
