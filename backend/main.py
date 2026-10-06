@@ -8,7 +8,6 @@ from routes.cart_routes import router as cart_router
 from routes.wishlist_routes import router as wishlist_router
 from routes.order_routes import router as order_router
 from routes.category_routes import router as category_router
-from routes.chat_routes import router as chat_router
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -72,7 +71,6 @@ app.include_router(cart_router)
 app.include_router(wishlist_router)
 app.include_router(order_router)
 app.include_router(category_router)
-app.include_router(chat_router)
 
 
 # ==========================================================
@@ -105,3 +103,18 @@ def home():
     return {
         "message": "Welcome to Backend"
     }
+
+
+# ==========================================================
+# RUN DIRECTLY VIA PYTHON MAIN.PY
+# ==========================================================
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True,
+    )

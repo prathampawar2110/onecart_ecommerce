@@ -1,7 +1,6 @@
 import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
 import CustomerCategoryBar from "@/components/CustomerCategoryBar/CustomerCategoryBar";
-// import ChatBot from "@/components/ChatBot/ChatBot";
 // import CategoryBar from "@/components/CategoryBar/CategoryBar";
 
 export default function CustomerLayout({ children }) {
@@ -21,8 +20,6 @@ export default function CustomerLayout({ children }) {
             
 
             <Footer />
-
-            {/* <ChatBot /> */}
         </div>
         
     );

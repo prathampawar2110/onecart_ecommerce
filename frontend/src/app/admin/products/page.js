@@ -4,10 +4,6 @@ import { useEffect, useState } from "react";
 
 import {
   Boxes,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Edit3,
   ImageOff,
   Package,
@@ -34,15 +30,8 @@ export default function AdminProducts() {
   const [categories, setCategories] = useState([]);
   const [searchText, setSearchText] = useState("");
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
   const [showForm, setShowForm] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-
-  const [productToDelete, setProductToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const [variantFields, setVariantFields] = useState([]);
 
@@ -462,22 +451,21 @@ export default function AdminProducts() {
   // Delete Product
   // --------------------------------------------------
 
-  async function handleConfirmDelete() {
-    if (!productToDelete) return;
+  async function handleDeleteProduct(productUuid) {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this product?"
+    );
 
-    setIsDeleting(true);
+    if (!confirmDelete) {
+      return;
+    }
 
     try {
-      await deleteProduct(productToDelete.productUuid);
-
-      if (paginatedProducts.length === 1 && currentPage > 1) {
-        setCurrentPage((prev) => prev - 1);
-      }
+      await deleteProduct(productUuid);
 
       await refreshProducts();
 
       showMessage("Product deleted successfully");
-      setProductToDelete(null);
     } catch (error) {
       console.error(
         "Delete Product error:",
@@ -488,8 +476,6 @@ export default function AdminProducts() {
         error.message || "Failed to delete product",
         "error"
       );
-    } finally {
-      setIsDeleting(false);
     }
   }
 
@@ -567,29 +553,6 @@ export default function AdminProducts() {
       );
     }
   );
-
-  // --------------------------------------------------
-  // Pagination Calculations
-  // --------------------------------------------------
-
-  const totalItems = filteredProducts.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
-  const startIndex = totalItems === 0 ? 0 : (safeCurrentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
-
-  function handlePageChange(newPage) {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  }
-
-  function handleItemsPerPageChange(event) {
-    const newLimit = Number(event.target.value);
-    setItemsPerPage(newLimit);
-    setCurrentPage(1);
-  }
 
   // --------------------------------------------------
   // Dashboard Statistics
@@ -732,10 +695,9 @@ export default function AdminProducts() {
               type="text"
               placeholder="Search product, category, price, stock or status"
               value={searchText}
-              onChange={(event) => {
-                setSearchText(event.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(event) =>
+                setSearchText(event.target.value)
+              }
               className="w-full rounded-lg border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-950 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
             />
           </div>
@@ -800,19 +762,6 @@ export default function AdminProducts() {
         )}
 
         {/* --------------------------------------------------
-            Delete Confirmation Modal
-        -------------------------------------------------- */}
-
-        {productToDelete && (
-          <DeleteConfirmModal
-            product={productToDelete}
-            isDeleting={isDeleting}
-            onClose={() => !isDeleting && setProductToDelete(null)}
-            onConfirm={handleConfirmDelete}
-          />
-        )}
-
-        {/* --------------------------------------------------
             Products Table
         -------------------------------------------------- */}
 
@@ -864,8 +813,8 @@ export default function AdminProducts() {
 
               <tbody className="divide-y divide-slate-100">
 
-                {paginatedProducts.length > 0 ? (
-                  paginatedProducts.map((product) => {
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map((product) => {
                     const status =
                       getStockStatus(product.stock);
 
@@ -961,7 +910,9 @@ export default function AdminProducts() {
                             <button
                               type="button"
                               onClick={() =>
-                                setProductToDelete(product)
+                                handleDeleteProduct(
+                                  product.productUuid
+                                )
                               }
                               title="Delete product"
                               className="inline-flex cursor-pointer h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-700 transition hover:bg-red-100"
@@ -998,8 +949,8 @@ export default function AdminProducts() {
 
           <div className="divide-y divide-slate-100 md:hidden">
 
-            {paginatedProducts.length > 0 ? (
-              paginatedProducts.map((product) => {
+            {filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => {
                 const status =
                   getStockStatus(product.stock);
 
@@ -1117,9 +1068,11 @@ export default function AdminProducts() {
                       <button
                         type="button"
                         onClick={() =>
-                          setProductToDelete(product)
+                          handleDeleteProduct(
+                            product.productUuid
+                          )
                         }
-                        className="inline-flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700"
                       >
                         <Trash2 className="h-4 w-4" />
                         Delete
@@ -1139,141 +1092,6 @@ export default function AdminProducts() {
             )}
 
           </div>
-
-          {/* ==================================================
-              PAGINATION CONTROLS
-          ================================================== */}
-
-          {totalItems > 0 && (
-            <div className="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-              {/* Pagination Info & Page Size Selector */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                <span>
-                  Showing{" "}
-                  <span className="font-bold text-slate-900">
-                    {startIndex + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-bold text-slate-900">
-                    {endIndex}
-                  </span>{" "}
-                  of{" "}
-                  <span className="font-bold text-slate-900">
-                    {totalItems}
-                  </span>{" "}
-                  products
-                </span>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">Rows per page:</span>
-                  <select
-                    value={itemsPerPage}
-                    onChange={handleItemsPerPageChange}
-                    className="cursor-pointer rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Navigation Buttons */}
-              <div className="flex items-center gap-1.5 self-center sm:self-auto">
-                {/* First Page */}
-                <button
-                  type="button"
-                  onClick={() => handlePageChange(1)}
-                  disabled={safeCurrentPage === 1}
-                  title="First page"
-                  className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </button>
-
-                {/* Previous Page */}
-                <button
-                  type="button"
-                  onClick={() => handlePageChange(safeCurrentPage - 1)}
-                  disabled={safeCurrentPage === 1}
-                  title="Previous page"
-                  className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-
-                {/* Page Numbers */}
-                <div className="flex items-center gap-1 px-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter((p) => {
-                      return (
-                        p === 1 ||
-                        p === totalPages ||
-                        Math.abs(p - safeCurrentPage) <= 1
-                      );
-                    })
-                    .reduce((acc, p, idx, arr) => {
-                      if (idx > 0 && p - arr[idx - 1] > 1) {
-                        acc.push("ellipsis-" + p);
-                      }
-                      acc.push(p);
-                      return acc;
-                    }, [])
-                    .map((item) => {
-                      if (typeof item === "string") {
-                        return (
-                          <span
-                            key={item}
-                            className="px-1 text-xs font-bold text-slate-400"
-                          >
-                            ...
-                          </span>
-                        );
-                      }
-
-                      const isActive = item === safeCurrentPage;
-                      return (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => handlePageChange(item)}
-                          className={`inline-flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-lg px-2.5 text-xs font-bold transition shadow-xs ${
-                            isActive
-                              ? "bg-slate-950 text-white"
-                              : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                          }`}
-                        >
-                          {item}
-                        </button>
-                      );
-                    })}
-                </div>
-
-                {/* Next Page */}
-                <button
-                  type="button"
-                  onClick={() => handlePageChange(safeCurrentPage + 1)}
-                  disabled={safeCurrentPage === totalPages}
-                  title="Next page"
-                  className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-
-                {/* Last Page */}
-                <button
-                  type="button"
-                  onClick={() => handlePageChange(totalPages)}
-                  disabled={safeCurrentPage === totalPages}
-                  title="Last page"
-                  className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          )}
         </section>
       </div>
     </div>
@@ -1841,97 +1659,3 @@ function Field({
 
 const inputClassName =
   "w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100";
-
-// ======================================================
-// Delete Confirmation Modal Component
-// ======================================================
-
-function DeleteConfirmModal({
-  product,
-  isDeleting,
-  onClose,
-  onConfirm,
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs transition-opacity duration-200">
-      <div className="relative w-full max-w-md scale-100 overflow-hidden rounded-2xl bg-white p-6 shadow-2xl transition-all duration-200">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={isDeleting}
-          className="absolute right-4 top-4 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 disabled:pointer-events-none"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        <div className="flex flex-col items-center text-center">
-          <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600 ring-8 ring-red-50">
-            <Trash2 className="h-7 w-7" />
-          </div>
-
-          <h3 className="text-xl font-bold text-slate-950">
-            Delete Product?
-          </h3>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Are you sure you want to delete{" "}
-            <span className="font-semibold text-slate-900">
-              &quot;{product.name}&quot;
-            </span>
-            ? This action cannot be undone and will permanently remove it from your catalog.
-          </p>
-
-          {/* Product Preview Card */}
-          {product.image_url && (
-            <div className="mt-4 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left">
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="h-12 w-12 shrink-0 rounded-lg border border-slate-200 bg-white object-contain"
-              />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-slate-900">
-                  {product.name}
-                </p>
-                {/* <p className="text-xs font-medium text-slate-500">
-                  {product.category} • ₹{Number(product.price || 0).toLocaleString("en-IN")}
-                </p> */}
-              </div>
-            </div>
-          )}
-
-          {/* Modal Actions */}
-          <div className="mt-6 flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isDeleting}
-              className="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50 sm:w-auto"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={isDeleting}
-              className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-            >
-              {isDeleting ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Deleting...</span>
-                </>
-              ) : (
-                <>
-                  <Trash2 className="h-4 w-4" />
-                  <span>Delete Product</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}

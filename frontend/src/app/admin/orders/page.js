@@ -3,29 +3,12 @@
 const API_URL = "http://127.0.0.1:8000";
 
 import { useEffect, useState } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Clock3,
-  PackageCheck,
-  ReceiptText,
-  Search,
-  Truck,
-  X,
-} from "lucide-react";
+import { Clock3, PackageCheck, ReceiptText, Truck } from "lucide-react";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  // Filters & Pagination
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [searchText, setSearchText] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     async function fetchOrders() {
@@ -207,104 +190,41 @@ export default function AdminOrders() {
 
   const summaryCards = [
     {
-      key: "all",
       label: "Total orders",
       value: orders.length,
       icon: ReceiptText,
-      activeRing: "ring-2 ring-slate-950 border-transparent",
-      iconBg: "bg-slate-100 text-slate-700",
-      badge: "All Orders",
+      className: "bg-slate-100 text-slate-700",
     },
     {
-      key: "Processing",
       label: "Processing",
       value: processingOrders,
       icon: Clock3,
-      activeRing: "ring-2 ring-amber-500 border-transparent",
-      iconBg: "bg-amber-50 text-amber-700",
-      badge: "Needs Processing",
+      className: "bg-amber-50 text-amber-700",
     },
     {
-      key: "Dispatched",
       label: "Dispatched",
       value: dispatchedOrders,
       icon: Truck,
-      activeRing: "ring-2 ring-sky-500 border-transparent",
-      iconBg: "bg-sky-50 text-sky-700",
-      badge: "On the way",
+      className: "bg-sky-50 text-sky-700",
     },
     {
-      key: "Delivered",
       label: "Delivered",
       value: deliveredOrders,
       icon: PackageCheck,
-      activeRing: "ring-2 ring-emerald-500 border-transparent",
-      iconBg: "bg-emerald-50 text-emerald-700",
-      badge: "Completed",
+      className: "bg-emerald-50 text-emerald-700",
     },
   ];
-
-  // --------------------------------------------------
-  // Filter & Search Logic
-  // --------------------------------------------------
-
-  const filteredOrders = orders.filter((order) => {
-    if (statusFilter !== "all" && order.status !== statusFilter) {
-      return false;
-    }
-
-    if (searchText.trim()) {
-      const search = searchText.toLowerCase();
-      const shortOrderId = formatOrderId(order.orderUuid).toLowerCase();
-      const matchesId =
-        order.orderUuid?.toLowerCase().includes(search) ||
-        shortOrderId.includes(search);
-      const matchesUser = order.userName?.toLowerCase().includes(search);
-      const matchesProducts = order.items?.some((item) =>
-        (item.productName || item.name || "").toLowerCase().includes(search)
-      );
-
-      if (!matchesId && !matchesUser && !matchesProducts) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  // --------------------------------------------------
-  // Pagination Calculations
-  // --------------------------------------------------
-
-  const totalItems = filteredOrders.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const safeCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
-  const startIndex = totalItems === 0 ? 0 : (safeCurrentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-  const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
-
-  function handlePageChange(newPage) {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage);
-    }
-  }
-
-  function handleItemsPerPageChange(event) {
-    const newLimit = Number(event.target.value);
-    setItemsPerPage(newLimit);
-    setCurrentPage(1);
-  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
-        <div className="h-8 w-40 animate-pulse rounded bg-slate-200" />
+        <div className="h-8 w-40 rounded bg-slate-200 animate-pulse" />
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[...Array(4)].map((_, index) => (
             <div
               key={index}
-              className="h-28 animate-pulse rounded-lg bg-white shadow-sm"
+              className="h-28 rounded-lg bg-white shadow-sm animate-pulse"
             />
           ))}
         </div>
@@ -314,7 +234,7 @@ export default function AdminOrders() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
           <h1 className="text-2xl font-bold text-red-700">Access Denied</h1>
 
@@ -337,34 +257,20 @@ export default function AdminOrders() {
           </h1>
 
           <p className="mt-1 text-sm text-slate-500 sm:text-base">
-            Review, process, dispatch, and close customer orders. Click cards below to filter.
+            Review, process, dispatch, and close customer orders.
           </p>
         </header>
-
-        {/* --------------------------------------------------
-            Interactive Filter Cards
-        -------------------------------------------------- */}
 
         <section className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {summaryCards.map((card) => {
             const Icon = card.icon;
-            const isSelected = statusFilter === card.key;
 
             return (
-              <button
-                key={card.key}
-                type="button"
-                onClick={() => {
-                  setStatusFilter(card.key);
-                  setCurrentPage(1);
-                }}
-                className={`relative flex cursor-pointer flex-col justify-between rounded-xl border bg-white p-4 text-left shadow-sm transition-all hover:shadow-md ${
-                  isSelected
-                    ? `${card.activeRing} bg-slate-50/50 shadow-md`
-                    : "border-slate-200 hover:border-slate-300"
-                }`}
+              <article
+                key={card.label}
+                className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
               >
-                <div className="flex w-full items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-slate-500">
                       {card.label}
@@ -376,74 +282,29 @@ export default function AdminOrders() {
                   </div>
 
                   <span
-                    className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${card.iconBg}`}
+                    className={`inline-flex h-10 w-10 items-center justify-center rounded-lg ${card.className}`}
                   >
                     <Icon className="h-5 w-5" />
                   </span>
                 </div>
-
-                <div className="mt-3 flex items-center justify-between pt-2 border-t border-slate-100">
-                  <span className="text-xs font-semibold text-slate-400">
-                    {card.badge}
-                  </span>
-                  {isSelected && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 ring-1 ring-blue-200">
-                      Active Filter
-                    </span>
-                  )}
-                </div>
-              </button>
+              </article>
             );
           })}
         </section>
 
-        {/* --------------------------------------------------
-            Search & Filter Status Bar
-        -------------------------------------------------- */}
+        <section className="mt-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-950">
+                Order Queue
+              </h2>
 
-        {/* <section className="mt-5 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by Order ID, customer name, or product name..."
-              value={searchText}
-              onChange={(e) => {
-                setSearchText(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-950 shadow-xs outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            Active filter pill
-            {statusFilter !== "all" && (
-              <div className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                <span>Filter: <strong>{statusFilter}</strong></span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStatusFilter("all");
-                    setCurrentPage(1);
-                  }}
-                  className="cursor-pointer text-slate-400 hover:text-slate-600"
-                  title="Clear filter"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            )}
-
-            <div className="text-xs font-medium text-slate-500">
-              Total Revenue: <strong className="text-slate-950">{formatCurrency(totalRevenue)}</strong>
+              <p className="mt-1 text-sm text-slate-500">
+                Total booked value: {formatCurrency(totalRevenue)}
+              </p>
             </div>
           </div>
-        </section> */}
-
-        {/* --------------------------------------------------
-            Orders Table / Cards
-        -------------------------------------------------- */}
+        </section>
 
         {orders.length === 0 ? (
           <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center">
@@ -453,7 +314,6 @@ export default function AdminOrders() {
           </div>
         ) : (
           <section className="mt-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            {/* Desktop View */}
             <div className="hidden overflow-x-auto lg:block">
               <table className="w-full min-w-248">
                 <thead className="bg-slate-950 text-white">
@@ -489,314 +349,161 @@ export default function AdminOrders() {
                 </thead>
 
                 <tbody className="divide-y divide-slate-100">
-                  {paginatedOrders.length > 0 ? (
-                    paginatedOrders.map((order, index) => (
-                      <tr
-                        key={order.orderUuid || `order-${index}`}
-                        className="transition hover:bg-slate-50"
-                      >
-                        <td className="px-5 py-4">
-                          <p className="text-sm font-semibold text-slate-950">
-                            {formatOrderId(order.orderUuid)}
-                          </p>
-                        </td>
-
-                        <td className="px-5 py-4 text-sm font-medium text-slate-700">
-                          {order.userName || "Unknown User"}
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <div className="max-w-[18rem] space-y-1">
-                            {order.items?.map((item, itemIndex) => (
-                              <p
-                                key={item.productUuid || itemIndex}
-                                className="truncate text-sm text-slate-500"
-                              >
-                                {item.productName || item.name || "Product"}
-                                <span className="text-slate-400">
-                                  {" "}
-                                  x {item.quantity}
-                                </span>
-                              </p>
-                            ))}
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-4 text-sm font-bold text-slate-950">
-                          {formatCurrency(order.total_amount)}
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClasses(
-                              order.status,
-                            )}`}
-                          >
-                            {order.status}
-                          </span>
-                        </td>
-
-                        <td className="px-5 py-4 text-sm text-slate-500">
-                          {formatDate(order.created_at)}
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <StatusDropdown order={order} />
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan="7"
-                        className="px-6 py-10 text-center text-sm text-slate-500"
-                      >
-                        {searchText || statusFilter !== "all"
-                          ? "No orders match your filter criteria."
-                          : "No orders available."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile Cards View */}
-            <div className="divide-y divide-slate-100 lg:hidden">
-              {paginatedOrders.length > 0 ? (
-                paginatedOrders.map((order, index) => (
-                  <article
-                    key={order.orderUuid || `mobile-order-${index}`}
-                    className="p-4 sm:p-5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                          Order
-                        </p>
-
-                        <p className="mt-1 text-sm font-bold text-slate-950">
+                  {orders.map((order, index) => (
+                    <tr
+                      key={order.orderUuid || `order-${index}`}
+                      className="transition hover:bg-slate-50"
+                    >
+                      <td className="px-5 py-4">
+                        {/* ⭐ CHANGED — show short order ID */}
+                        <p className="text-sm font-semibold text-slate-950">
                           {formatOrderId(order.orderUuid)}
                         </p>
-                      </div>
+                      </td>
 
-                      <span
-                        className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClasses(
-                          order.status,
-                        )}`}
-                      >
-                        {order.status}
-                      </span>
-                    </div>
+                      <td className="px-5 py-4 text-sm font-medium text-slate-700">
+                        {order.userName || "Unknown User"}
+                      </td>
 
-                    <div className="mt-4 rounded-lg bg-slate-50 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                        Products
-                      </p>
-
-                      <div className="mt-2 space-y-2">
-                        {order.items?.map((item, itemIndex) => (
-                          <div
-                            key={item.productUuid || itemIndex}
-                            className="flex justify-between gap-3 text-sm"
-                          >
-                            <span className="text-slate-700">
+                      <td className="px-5 py-4">
+                        <div className="max-w-[18rem] space-y-1">
+                          {order.items?.map((item, itemIndex) => (
+                            <p
+                              key={item.productUuid || itemIndex}
+                              className="truncate text-sm text-slate-500"
+                            >
                               {item.productName || item.name || "Product"}
+
                               <span className="text-slate-400">
                                 {" "}
                                 x {item.quantity}
                               </span>
-                            </span>
-
-                            <span className="font-semibold text-slate-950">
-                              {formatCurrency(
-                                Number(item.price || 0) *
-                                  Number(item.quantity || 0),
-                              )}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-slate-400">Customer</p>
-
-                        <p className="mt-1 text-sm font-medium text-slate-700">
-                          {order.userName || "Unknown User"}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-400">Total</p>
-
-                        <p className="mt-1 text-sm font-bold text-slate-950">
-                          {formatCurrency(order.total_amount)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-400">Date</p>
-
-                        <p className="mt-1 text-sm text-slate-700">
-                          {formatDate(order.created_at)}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-xs text-slate-400">Update</p>
-
-                        <div className="mt-1">
-                          <StatusDropdown order={order} />
+                            </p>
+                          ))}
                         </div>
-                      </div>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <div className="px-6 py-10 text-center text-sm text-slate-500">
-                  {searchText || statusFilter !== "all"
-                    ? "No orders match your filter criteria."
-                    : "No orders available."}
-                </div>
-              )}
+                      </td>
+
+                      <td className="px-5 py-4 text-sm font-bold text-slate-950">
+                        {formatCurrency(order.total_amount)}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusClasses(
+                            order.status,
+                          )}`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+
+                      <td className="px-5 py-4 text-sm text-slate-500">
+                        {formatDate(order.created_at)}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <StatusDropdown order={order} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
-            {/* ==================================================
-                PAGINATION CONTROLS
-            ================================================== */}
+            <div className="divide-y divide-slate-100 lg:hidden">
+              {orders.map((order, index) => (
+                <article
+                  key={order.orderUuid || `mobile-order-${index}`}
+                  className="p-4 sm:p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Order
+                      </p>
 
-            {totalItems > 0 && (
-              <div className="flex flex-col gap-4 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                {/* Pagination Info & Page Size Selector */}
-                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                  <span>
-                    Showing{" "}
-                    <span className="font-bold text-slate-900">
-                      {startIndex + 1}
-                    </span>{" "}
-                    to{" "}
-                    <span className="font-bold text-slate-900">
-                      {endIndex}
-                    </span>{" "}
-                    of{" "}
-                    <span className="font-bold text-slate-900">
-                      {totalItems}
-                    </span>{" "}
-                    orders
-                  </span>
+                      {/* ⭐ CHANGED — show short order ID */}
+                      <p className="mt-1 text-sm font-bold text-slate-950">
+                        {formatOrderId(order.orderUuid)}
+                      </p>
+                    </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">Rows per page:</span>
-                    <select
-                      value={itemsPerPage}
-                      onChange={handleItemsPerPageChange}
-                      className="cursor-pointer rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    <span
+                      className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${getStatusClasses(
+                        order.status,
+                      )}`}
                     >
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={20}>20</option>
-                      <option value={50}>50</option>
-                    </select>
+                      {order.status}
+                    </span>
                   </div>
-                </div>
 
-                {/* Navigation Buttons */}
-                <div className="flex items-center gap-1.5 self-center sm:self-auto">
-                  {/* First Page */}
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(1)}
-                    disabled={safeCurrentPage === 1}
-                    title="First page"
-                    className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <ChevronsLeft className="h-4 w-4" />
-                  </button>
+                  <div className="mt-4 rounded-lg bg-slate-50 p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Products
+                    </p>
 
-                  {/* Previous Page */}
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(safeCurrentPage - 1)}
-                    disabled={safeCurrentPage === 1}
-                    title="Previous page"
-                    className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
+                    <div className="mt-2 space-y-2">
+                      {order.items?.map((item, itemIndex) => (
+                        <div
+                          key={item.productUuid || itemIndex}
+                          className="flex justify-between gap-3 text-sm"
+                        >
+                          <span className="text-slate-700">
+                            {item.productName || item.name || "Product"}
 
-                  {/* Page Numbers */}
-                  <div className="flex items-center gap-1 px-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter((p) => {
-                        return (
-                          p === 1 ||
-                          p === totalPages ||
-                          Math.abs(p - safeCurrentPage) <= 1
-                        );
-                      })
-                      .reduce((acc, p, idx, arr) => {
-                        if (idx > 0 && p - arr[idx - 1] > 1) {
-                          acc.push("ellipsis-" + p);
-                        }
-                        acc.push(p);
-                        return acc;
-                      }, [])
-                      .map((item) => {
-                        if (typeof item === "string") {
-                          return (
-                            <span
-                              key={item}
-                              className="px-1 text-xs font-bold text-slate-400"
-                            >
-                              ...
+                            <span className="text-slate-400">
+                              {" "}
+                              x {item.quantity}
                             </span>
-                          );
-                        }
+                          </span>
 
-                        const isActive = item === safeCurrentPage;
-                        return (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => handlePageChange(item)}
-                            className={`inline-flex h-9 min-w-9 cursor-pointer items-center justify-center rounded-lg px-2.5 text-xs font-bold transition shadow-xs ${
-                              isActive
-                                ? "bg-slate-950 text-white"
-                                : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-100"
-                            }`}
-                          >
-                            {item}
-                          </button>
-                        );
-                      })}
+                          <span className="font-semibold text-slate-950">
+                            {formatCurrency(
+                              Number(item.price || 0) *
+                                Number(item.quantity || 0),
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Next Page */}
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(safeCurrentPage + 1)}
-                    disabled={safeCurrentPage === totalPages}
-                    title="Next page"
-                    className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-slate-400">Customer</p>
 
-                  {/* Last Page */}
-                  <button
-                    type="button"
-                    onClick={() => handlePageChange(totalPages)}
-                    disabled={safeCurrentPage === totalPages}
-                    title="Last page"
-                    className="inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-xs transition hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <ChevronsRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
+                      <p className="mt-1 text-sm font-medium text-slate-700">
+                        {order.userName || "Unknown User"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">Total</p>
+
+                      <p className="mt-1 text-sm font-bold text-slate-950">
+                        {formatCurrency(order.total_amount)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">Date</p>
+
+                      <p className="mt-1 text-sm text-slate-700">
+                        {formatDate(order.created_at)}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">Update</p>
+
+                      <div className="mt-1">
+                        <StatusDropdown order={order} />
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
           </section>
         )}
       </div>
