@@ -54,6 +54,3 @@ def get_current_admin(
         )
 
     return user
-
-
-

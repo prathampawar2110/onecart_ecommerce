@@ -122,7 +122,7 @@ export default function AdminSidebar() {
       </aside>
 
       {showLogoutPopup && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/50 px-4">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-lg bg-white p-6 shadow-2xl">
             <h2 className="text-xl font-bold text-slate-950">Logout</h2>
 

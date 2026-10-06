@@ -119,6 +119,61 @@ def search_products(query: str):
 
     return products
 
+# ============================================================
+# PRODUCTS BY MAX_PRICE
+# ============================================================
+
+def search_products_by_max_price(search_word: str, max_price: float):
+
+    products = list(
+        product_collection.find(
+            {
+                "$or": [
+                    {
+                        "name": {
+                            "$regex": search_word,
+                            "$options": "i"
+                        }
+                    },
+                    {
+                        "category": {
+                            "$regex": search_word,
+                            "$options": "i"
+                        }
+                    }
+                ],
+                "price": {
+                    "$lte": max_price
+                }
+            }
+        )
+    )
+
+    for index, product in enumerate(products):
+        products[index] = _normalize_product(product)
+
+    return products
+
+def get_products_by_category_and_max_price(category: str, max_price: float):
+    products = list(
+        product_collection.find(
+            {
+                "category": {
+                    "$regex": category,
+                    "$options": "i"
+                },
+                "price": {
+                    "$lte": max_price
+                }
+            }
+        )
+    )
+
+    for index, product in enumerate(products):
+        products[index] = _normalize_product(product)
+
+    return products
+
 
 # ============================================================
 # PRODUCTS BY CATEGORY
